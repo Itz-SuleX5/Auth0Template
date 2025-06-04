@@ -24,7 +24,7 @@ public class SecurityConfig {
     public SecurityFilterChain configure(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/", "/images/**").permitAll()
+                .requestMatchers("/", "/images/**", "/admin").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2Login(withDefaults())

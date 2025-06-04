@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5"
+      layout:decorate="~{layouts/default}">
+
+<div id="page" layout:fragment="content">
+    <div class="container">
+        <div class="mt-5">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-12">
+                        <h1>Hola Admin</h1>
+                        <p class="lead">Bienvenido al panel de administración.</p>
+                        <div sec:authorize="isAuthenticated()">
+                            <p>Usuario autenticado: <span th:text="${profile.get('name')}">Nombre</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</html> 

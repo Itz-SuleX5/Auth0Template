@@ -53,6 +53,9 @@
                             <a href="/profile" class="dropdown-item dropdown-profile">
                                 <i class="fas fa-user mr-3"></i> Profile
                             </a>
+                            <a href="/admin" class="dropdown-item">
+                                <i class="fas fa-cog mr-3"></i> Admin
+                            </a>
                             <form name="logoutForm" th:action="@{/logout}" method="post">
                                 <button type="submit" id="qsLogoutBtn" class="dropdown-item">
                                     <i class="fas fa-power-off mr-3"></i> Log out
@@ -83,6 +86,10 @@
                     <li>
                         <i class="fas fa-user mr-3"></i>
                         <a th:href="@{/profile}"> Profile</a>
+                    </li>
+                    <li>
+                        <i class="fas fa-cog mr-3"></i>
+                        <a th:href="@{/admin}"> Admin</a>
                     </li>
                     <li>
                         <form name="logoutForm" th:action="@{/logout}" method="post">
