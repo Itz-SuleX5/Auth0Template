@@ -12,3 +12,18 @@ okta:
     issuer: https://dev-6a8gx4jqe8ymcodi.us.auth0.com/
     client-id: y4iWLon3g9WvwJwB8WRhVr9fTvPnUqGL
     client-secret: PRqglH-LghLripi4UOTutCeVcZTRZa6AHG3z44G22Q4A9Dfk9Rft4LEW2IEjSmML
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/finance_dashboard
+    username: postgres
+    password: toor
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
