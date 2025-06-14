@@ -51,14 +51,14 @@
                             <!-- Show the user's full name from the id token here -->
                             <div class="dropdown-header" th:text="${profile.get('name')}"></div>
                             <a href="/profile" class="dropdown-item dropdown-profile">
-                                <i class="fas fa-user mr-3"></i> Profile
+                                <i class="fas fa-user mr-3"></i> Perfil
                             </a>
                             <a href="/admin" class="dropdown-item">
                                 <i class="fas fa-cog mr-3"></i> Admin
                             </a>
                             <form name="logoutForm" th:action="@{/logout}" method="post">
                                 <button type="submit" id="qsLogoutBtn" class="dropdown-item">
-                                    <i class="fas fa-power-off mr-3"></i> Log out
+                                    <i class="fas fa-power-off mr-3"></i> Cerrar sesión
                                 </button>
                             </form>
                         </div>

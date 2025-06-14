@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Categorías</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Gestión de Categorías</h1>
+        
+        <!-- Formulario para crear/editar categoría -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Nueva Categoría</h5>
+            </div>
+            <div class="card-body">
+                <form id="categoryForm">
+                    <input type="hidden" id="categoryId">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="description"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="icon" class="form-label">Icono</label>
+                        <input type="text" class="form-control" id="icon" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">Cancelar</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tabla de categorías -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Lista de Categorías</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Icono</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoriesTable">
+                            <!-- Las categorías se cargarán aquí dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Cargar categorías al iniciar
+        document.addEventListener('DOMContentLoaded', loadCategories);
+
+        // Función para cargar categorías
+        async function loadCategories() {
+            try {
+                const response = await fetch('/api/categories', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const categories = await response.json();
+                const tableBody = document.getElementById('categoriesTable');
+                tableBody.innerHTML = '';
+
+                if (categories.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = '<td colspan="5" class="text-center">No hay categorías disponibles</td>';
+                    tableBody.appendChild(row);
+                    return;
+                }
+
+                categories.forEach(category => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${category.id}</td>
+                        <td>${category.name}</td>
+                        <td>${category.description || ''}</td>
+                        <td>${category.icon}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editCategory(${JSON.stringify(category)})">Editar</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteCategory(${category.id})">Eliminar</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error al cargar categorías:', error);
+                const tableBody = document.getElementById('categoriesTable');
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar las categorías</td></tr>';
+            }
+        }
+
+        // Función para guardar categoría
+        document.getElementById('categoryForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const categoryId = document.getElementById('categoryId').value;
+            const category = {
+                name: document.getElementById('name').value,
+                description: document.getElementById('description').value,
+                icon: document.getElementById('icon').value
+            };
+
+            try {
+                const url = categoryId ? `/api/categories/${categoryId}` : '/api/categories';
+                const method = categoryId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(category)
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error);
+                }
+
+                resetForm();
+                loadCategories();
+            } catch (error) {
+                console.error('Error al guardar categoría:', error);
+                alert('Error al guardar la categoría: ' + error.message);
+            }
+        });
+
+        // Función para editar categoría
+        function editCategory(category) {
+            document.getElementById('categoryId').value = category.id;
+            document.getElementById('name').value = category.name;
+            document.getElementById('description').value = category.description || '';
+            document.getElementById('icon').value = category.icon;
+        }
+
+        // Función para eliminar categoría
+        async function deleteCategory(id) {
+            if (confirm('¿Estás seguro de que deseas eliminar esta categoría?')) {
+                try {
+                    const response = await fetch(`/api/categories/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error);
+                    }
+
+                    loadCategories();
+                } catch (error) {
+                    console.error('Error al eliminar categoría:', error);
+                    alert('Error al eliminar la categoría: ' + error.message);
+                }
+            }
+        }
+
+        // Función para resetear el formulario
+        function resetForm() {
+            document.getElementById('categoryForm').reset();
+            document.getElementById('categoryId').value = '';
+        }
+    </script>
+</body>
+</html> 

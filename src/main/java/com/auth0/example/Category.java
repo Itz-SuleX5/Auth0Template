@@ -1,10 +1,14 @@
-package com.auth0.model;
+package com.auth0.example;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 
 @Entity
 @Table(name = "categories")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Category {
     
     @Id
@@ -21,7 +25,12 @@ public class Category {
     private String icon;
 
     @OneToMany(mappedBy = "category")
+    @JsonIgnore
     private List<Transaction> transactions;
+
+    // Constructor vacío requerido por JPA
+    public Category() {
+    }
 
     // Getters y Setters
     public Long getId() {
@@ -56,11 +65,22 @@ public class Category {
         this.icon = icon;
     }
 
+    @JsonIgnore
     public List<Transaction> getTransactions() {
         return transactions;
     }
 
     public void setTransactions(List<Transaction> transactions) {
         this.transactions = transactions;
+    }
+
+    @Override
+    public String toString() {
+        return "Category{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", icon='" + icon + '\'' +
+                '}';
     }
 } 

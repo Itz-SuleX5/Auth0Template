@@ -1,38 +1,29 @@
-package com.auth0.model;
+package com.auth0.example;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.YearMonth;
 
 @Entity
-@Table(name = "transactions")
-public class Transaction {
+@Table(name = "budgets")
+public class Budget {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
-    private LocalDateTime fecha;
 
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
     @Column(nullable = false)
-    private String description;
+    private YearMonth month;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TransactionType type;
-
-    public enum TransactionType {
-        INGRESO,
-        GASTO
-    }
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal spent;
 
     // Getters y Setters
     public Long getId() {
@@ -43,14 +34,6 @@ public class Transaction {
         this.id = id;
     }
 
-    public LocalDateTime getFecha() {
-        return fecha;
-    }
-
-    public void setFecha(LocalDateTime fecha) {
-        this.fecha = fecha;
-    }
-
     public Category getCategory() {
         return category;
     }
@@ -59,12 +42,12 @@ public class Transaction {
         this.category = category;
     }
 
-    public String getDescription() {
-        return description;
+    public YearMonth getMonth() {
+        return month;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setMonth(YearMonth month) {
+        this.month = month;
     }
 
     public BigDecimal getAmount() {
@@ -75,11 +58,15 @@ public class Transaction {
         this.amount = amount;
     }
 
-    public TransactionType getType() {
-        return type;
+    public BigDecimal getSpent() {
+        return spent;
     }
 
-    public void setType(TransactionType type) {
-        this.type = type;
+    public void setSpent(BigDecimal spent) {
+        this.spent = spent;
+    }
+
+    public BigDecimal getRemaining() {
+        return amount.subtract(spent);
     }
 } 

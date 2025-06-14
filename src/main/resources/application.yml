@@ -3,9 +3,14 @@ server:
 
 logging:
   level:
-    root: ERROR
-    org.springframework.web: ERROR
-    com.auth0.example: TRACE
+    root: INFO
+    org.springframework.web: DEBUG
+    com.auth0.example: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.data: DEBUG
+    org.springframework.transaction: DEBUG
 
 okta:
   oauth2:
@@ -27,3 +32,5 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        generate_statistics: true
+        use_sql_comments: true

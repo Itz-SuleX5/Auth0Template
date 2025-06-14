@@ -3,12 +3,34 @@ server:
 
 logging:
   level:
-    root: ERROR
-    org.springframework.web: ERROR
-    com.auth0.example: TRACE
+    root: INFO
+    org.springframework.web: DEBUG
+    com.auth0.example: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.data: DEBUG
+    org.springframework.transaction: DEBUG
 
 okta:
   oauth2:
     issuer: https://dev-6a8gx4jqe8ymcodi.us.auth0.com/
     client-id: y4iWLon3g9WvwJwB8WRhVr9fTvPnUqGL
     client-secret: PRqglH-LghLripi4UOTutCeVcZTRZa6AHG3z44G22Q4A9Dfk9Rft4LEW2IEjSmML
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/finance_dashboard
+    username: postgres
+    password: toor
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        generate_statistics: true
+        use_sql_comments: true
