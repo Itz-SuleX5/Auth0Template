@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -25,124 +27,123 @@ public class TransactionController {
         logger.info("Inicializando TransactionController");
     }
 
+    @GetMapping
+    public ResponseEntity<List<Transaction>> getAllTransactions() {
+        try {
+            logger.info("GET /api/transactions - Obteniendo todas las transacciones");
+            List<Transaction> transactions = transactionRepository.findAll();
+            logger.info("Transacciones encontradas: {}", transactions.size());
+            logger.debug("Transacciones: {}", transactions);
+            return ResponseEntity.ok(transactions);
+        } catch (Exception e) {
+            logger.error("Error al obtener transacciones", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @GetMapping("/test")
     public ResponseEntity<String> test() {
         logger.info("GET /api/transactions/test - Endpoint de prueba");
         return ResponseEntity.ok("El controlador de transacciones está funcionando - " + System.currentTimeMillis());
     }
 
-    @GetMapping
-    public ResponseEntity<?> getAllTransactions() {
-        try {
-            logger.info("GET /api/transactions - Obteniendo todas las transacciones");
-            List<Transaction> transactions = transactionRepository.findAll();
-            logger.info("Transacciones encontradas: {}", transactions.size());
-            for (Transaction t : transactions) {
-                logger.info("Transacción: id={}, descripción={}, monto={}, fecha={}, tipo={}, categoría={}",
-                    t.getId(), t.getDescription(), t.getAmount(), t.getFecha(), t.getType(),
-                    t.getCategory() != null ? t.getCategory().getId() : "null");
-            }
-            return ResponseEntity.ok(transactions);
-        } catch (Exception e) {
-            logger.error("Error al obtener las transacciones", e);
-            return ResponseEntity.internalServerError().body("Error al obtener las transacciones: " + e.getMessage());
-        }
-    }
-
     @PostMapping
     public ResponseEntity<?> createTransaction(@RequestBody Transaction transaction) {
         try {
-            logger.info("POST /api/transactions - Recibida petición para crear transacción: {}", transaction);
+            logger.info("Recibida solicitud para crear transacción: {}", transaction);
             
-            // Validar que la transacción no sea nula
-            if (transaction == null) {
-                logger.error("Error: La transacción no puede ser nula");
-                return ResponseEntity.badRequest().body("La transacción no puede ser nula");
+            if (transaction.getAmount() == null || transaction.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                logger.error("Monto inválido: {}", transaction.getAmount());
+                return ResponseEntity.badRequest().body("El monto debe ser mayor que 0");
             }
 
-            // Validar campos requeridos
-            if (transaction.getDescription() == null || transaction.getDescription().trim().isEmpty()) {
-                logger.error("Error: La descripción es requerida");
-                return ResponseEntity.badRequest().body("La descripción es requerida");
-            }
-
-            if (transaction.getAmount() == null) {
-                logger.error("Error: El monto es requerido");
-                return ResponseEntity.badRequest().body("El monto es requerido");
-            }
-
-            if (transaction.getFecha() == null) {
-                logger.error("Error: La fecha es requerida");
-                return ResponseEntity.badRequest().body("La fecha es requerida");
-            }
-
-            if (transaction.getType() == null) {
-                logger.error("Error: El tipo de transacción es requerido");
-                return ResponseEntity.badRequest().body("El tipo de transacción es requerido");
-            }
-
-            // Validar y obtener la categoría
             if (transaction.getCategory() == null || transaction.getCategory().getId() == null) {
-                logger.error("Error: La categoría es requerida");
+                logger.error("Categoría inválida: {}", transaction.getCategory());
                 return ResponseEntity.badRequest().body("La categoría es requerida");
             }
 
-            Category category = categoryRepository.findById(transaction.getCategory().getId())
-                .orElse(null);
-
-            if (category == null) {
-                logger.error("Error: La categoría con ID {} no existe", transaction.getCategory().getId());
-                return ResponseEntity.badRequest().body("La categoría especificada no existe");
+            Optional<Category> categoryOpt = categoryRepository.findById(transaction.getCategory().getId());
+            if (categoryOpt.isEmpty()) {
+                logger.error("Categoría no encontrada con ID: {}", transaction.getCategory().getId());
+                return ResponseEntity.badRequest().body("Categoría no encontrada");
             }
 
-            // Asignar la categoría encontrada
-            transaction.setCategory(category);
-
-            // Guardar la transacción
+            transaction.setCategory(categoryOpt.get());
             Transaction savedTransaction = transactionRepository.save(transaction);
-            logger.info("Transacción creada exitosamente: id={}, descripción={}, monto={}, fecha={}, tipo={}, categoría={}",
-                savedTransaction.getId(), savedTransaction.getDescription(), savedTransaction.getAmount(),
-                savedTransaction.getFecha(), savedTransaction.getType(),
-                savedTransaction.getCategory() != null ? savedTransaction.getCategory().getId() : "null");
-            
+            logger.info("Transacción creada exitosamente: {}", savedTransaction);
             return ResponseEntity.ok(savedTransaction);
         } catch (Exception e) {
-            logger.error("Error al crear la transacción", e);
-            return ResponseEntity.badRequest().body("Error al crear la transacción: " + e.getMessage());
+            logger.error("Error al crear transacción", e);
+            return ResponseEntity.internalServerError().body("Error al crear la transacción: " + e.getMessage());
         }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Transaction> getTransactionById(@PathVariable Long id) {
-        logger.info("GET /api/transactions/{} - Obteniendo transacción por ID", id);
-        return transactionRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> getTransactionById(@PathVariable Long id) {
+        try {
+            logger.info("Buscando transacción con ID: {}", id);
+            Optional<Transaction> transaction = transactionRepository.findById(id);
+            if (transaction.isPresent()) {
+                logger.info("Transacción encontrada: {}", transaction.get());
+                return ResponseEntity.ok(transaction.get());
+            } else {
+                logger.warn("Transacción no encontrada con ID: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            logger.error("Error al buscar transacción con ID: " + id, e);
+            return ResponseEntity.internalServerError().body("Error al buscar la transacción: " + e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Transaction> updateTransaction(@PathVariable Long id, @RequestBody Transaction transactionDetails) {
-        logger.info("PUT /api/transactions/{} - Actualizando transacción", id);
-        return transactionRepository.findById(id)
-                .map(existingTransaction -> {
-                    existingTransaction.setDescription(transactionDetails.getDescription());
-                    existingTransaction.setAmount(transactionDetails.getAmount());
-                    existingTransaction.setFecha(transactionDetails.getFecha());
-                    existingTransaction.setCategory(transactionDetails.getCategory());
-                    existingTransaction.setType(transactionDetails.getType());
-                    return ResponseEntity.ok(transactionRepository.save(existingTransaction));
-                })
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> updateTransaction(@PathVariable Long id, @RequestBody Transaction transactionDetails) {
+        try {
+            logger.info("Actualizando transacción con ID: {}", id);
+            Optional<Transaction> transactionOpt = transactionRepository.findById(id);
+            if (transactionOpt.isEmpty()) {
+                logger.warn("Transacción no encontrada con ID: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+
+            Transaction transaction = transactionOpt.get();
+            transaction.setAmount(transactionDetails.getAmount());
+            transaction.setDescription(transactionDetails.getDescription());
+            transaction.setFecha(transactionDetails.getFecha());
+            transaction.setType(transactionDetails.getType());
+            
+            if (transactionDetails.getCategory() != null && transactionDetails.getCategory().getId() != null) {
+                Optional<Category> categoryOpt = categoryRepository.findById(transactionDetails.getCategory().getId());
+                if (categoryOpt.isEmpty()) {
+                    logger.error("Categoría no encontrada con ID: {}", transactionDetails.getCategory().getId());
+                    return ResponseEntity.badRequest().body("Categoría no encontrada");
+                }
+                transaction.setCategory(categoryOpt.get());
+            }
+
+            Transaction updatedTransaction = transactionRepository.save(transaction);
+            logger.info("Transacción actualizada exitosamente: {}", updatedTransaction);
+            return ResponseEntity.ok(updatedTransaction);
+        } catch (Exception e) {
+            logger.error("Error al actualizar transacción con ID: " + id, e);
+            return ResponseEntity.internalServerError().body("Error al actualizar la transacción: " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteTransaction(@PathVariable Long id) {
-        logger.info("DELETE /api/transactions/{} - Eliminando transacción", id);
-        return transactionRepository.findById(id)
-                .map(transaction -> {
-                    transactionRepository.delete(transaction);
-                    return ResponseEntity.ok().build();
-                })
-                .orElse(ResponseEntity.notFound().build());
+        try {
+            logger.info("Eliminando transacción con ID: {}", id);
+            if (!transactionRepository.existsById(id)) {
+                logger.warn("Transacción no encontrada con ID: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+            transactionRepository.deleteById(id);
+            logger.info("Transacción eliminada exitosamente");
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            logger.error("Error al eliminar transacción con ID: " + id, e);
+            return ResponseEntity.internalServerError().body("Error al eliminar la transacción: " + e.getMessage());
+        }
     }
 } 

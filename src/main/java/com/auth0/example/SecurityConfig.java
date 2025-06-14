@@ -32,7 +32,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/**").permitAll()
                 .requestMatchers("/api/categories/**").permitAll()
                 .requestMatchers("/api/transactions/**").permitAll()
-                .requestMatchers("/", "/error", "/webjars/**").permitAll()
+                .requestMatchers("/", "/error", "/webjars/**", "/css/**", "/js/**").permitAll()
+                .requestMatchers("/new-transaction", "/transactions/**").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth2 -> oauth2

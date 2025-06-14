@@ -1,16 +1,24 @@
 server:
   port: 3000
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: always
+    include-exception: true
+    whitelabel:
+      enabled: false
 
 logging:
   level:
-    root: INFO
-    org.springframework.web: DEBUG
-    com.auth0.example: DEBUG
-    org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
+    root: DEBUG
+    org.springframework.web: TRACE
+    com.auth0.example: TRACE
+    org.springframework.security: TRACE
+    org.hibernate.SQL: TRACE
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    org.springframework.data: DEBUG
-    org.springframework.transaction: DEBUG
+    org.springframework.data: TRACE
+    org.springframework.transaction: TRACE
+    org.thymeleaf: TRACE
 
 okta:
   oauth2:
@@ -34,3 +42,22 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         generate_statistics: true
         use_sql_comments: true
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    servlet:
+      content-type: text/html
+  mvc:
+    static-path-pattern: /**
+  web:
+    resources:
+      static-locations: classpath:/static/
+      add-mappings: true
+      chain:
+        strategy:
+          content:
+            enabled: true
+            paths: /**

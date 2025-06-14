@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layouts/default}">
+
+<div id="page" layout:fragment="content">
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">Nueva Transacción</h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- Mensajes de error/éxito -->
+                        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <span th:text="${error}"></span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                            <span th:text="${success}"></span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+
+                        <form id="newTransactionForm" th:action="@{/new-transaction}" method="POST">
+                            <div class="mb-3">
+                                <label for="transactionType" class="form-label">Tipo de Transacción</label>
+                                <select class="form-select" id="transactionType" name="type" required>
+                                    <option value="">Seleccione un tipo</option>
+                                    <option th:each="type : ${T(com.auth0.example.Transaction.TransactionType).values()}"
+                                            th:value="${type}"
+                                            th:text="${type == T(com.auth0.example.Transaction.TransactionType).INGRESO ? 'Ingreso' : 'Gasto'}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="transactionAmount" class="form-label">Monto</label>
+                                <input type="number" class="form-control" id="transactionAmount" name="amount" step="0.01" min="0.01" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="transactionCategory" class="form-label">Categoría</label>
+                                <select class="form-select" id="transactionCategory" name="category.id" required>
+                                    <option value="">Seleccione una categoría</option>
+                                    <option th:each="category : ${categories}"
+                                            th:value="${category.id}"
+                                            th:text="${category.name}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="transactionDescription" class="form-label">Descripción</label>
+                                <input type="text" class="form-control" id="transactionDescription" name="description" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="transactionDate" class="form-label">Fecha</label>
+                                <input type="date" class="form-control" id="transactionDate" name="fecha" required>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <a th:href="@{/}" class="btn btn-secondary">Cancelar</a>
+                                <button type="submit" class="btn btn-primary">Guardar Transacción</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    // Función para cargar las categorías
+    async function loadCategories() {
+        try {
+            const response = await fetch('/api/categories');
+            if (!response.ok) {
+                throw new Error('Error al cargar las categorías');
+            }
+            const categories = await response.json();
+            const categorySelect = document.getElementById('transactionCategory');
+            categorySelect.innerHTML = '<option value="">Seleccione una categoría</option>';
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                categorySelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al cargar las categorías');
+        }
+    }
+
+    // Cargar categorías cuando el documento esté listo
+    document.addEventListener('DOMContentLoaded', loadCategories);
+</script>
+
+</html> 

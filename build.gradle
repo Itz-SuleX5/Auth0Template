@@ -36,4 +36,10 @@ dependencies {
     // Lombok para reducir código boilerplate
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    
+    // WebJars
+    implementation 'org.webjars:jquery:3.6.0'
+    implementation 'org.webjars:bootstrap:5.3.0'
+    implementation 'org.webjars:highlightjs:9.15.8'
+    implementation 'org.webjars:chartjs:3.7.0'
 }

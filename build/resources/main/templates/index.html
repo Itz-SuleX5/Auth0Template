@@ -11,7 +11,7 @@
                         <i class="fas fa-wallet fa-2x mr-3"></i>
                         <div>
                             <h6 class="card-subtitle mb-2 text-muted">Balance Total</h6>
-                            <h5 class="card-title">$4,580.75</h5>
+                            <h5 class="card-title" id="totalBalance">$0.00</h5>
                         </div>
                     </div>
                 </div>
@@ -22,7 +22,7 @@
                         <i class="fas fa-arrow-up fa-2x mr-3 text-success"></i>
                         <div>
                             <h6 class="card-subtitle mb-2 text-muted">Ingresos</h6>
-                            <h5 class="card-title text-success">$3,200.00</h5>
+                            <h5 class="card-title text-success" id="totalIncome">$0.00</h5>
                         </div>
                     </div>
                 </div>
@@ -33,7 +33,7 @@
                         <i class="fas fa-arrow-down fa-2x mr-3 text-danger"></i>
                         <div>
                             <h6 class="card-subtitle mb-2 text-muted">Gastos</h6>
-                            <h5 class="card-title text-danger">$2,600.00</h5>
+                            <h5 class="card-title text-danger" id="totalExpenses">$0.00</h5>
                         </div>
                     </div>
                 </div>
@@ -44,7 +44,7 @@
                         <i class="fas fa-piggy-bank fa-2x mr-3 text-info"></i>
                         <div>
                             <h6 class="card-subtitle mb-2 text-muted">Ahorros</h6>
-                            <h5 class="card-title text-info">$1,980.75</h5>
+                            <h5 class="card-title text-info" id="totalSavings">$0.00</h5>
                         </div>
                     </div>
                 </div>
@@ -77,54 +77,22 @@
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Transacciones Recientes</h5>
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Categoría</th>
-                                    <th>Descripción</th>
-                                    <th>Monto</th>
-                                    <th>Tipo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>15 Feb 2024</td>
-                                    <td>Alimentación</td>
-                                    <td>Supermercado Local</td>
-                                    <td>$20.50</td>
-                                    <td><span class="badge badge-danger" style="background-color: hsl(0,93.33%,94.12%); color: hsl(354.25,70.46%,53.53%);">Gasto</span></td>
-                                </tr>
-                                <tr>
-                                    <td>14 Feb 2024</td>
-                                    <td>Salario</td>
-                                    <td>Pago Mensual</td>
-                                    <td>$3000.00</td>
-                                    <td><span class="badge badge-success" style="background-color: hsl(140.62,84.21%,92.55%); color: hsl(133.7,61.35%,40.59%);">Ingreso</span></td>
-                                </tr>
-                                <tr>
-                                    <td>14 Feb 2024</td>
-                                    <td>Transporte</td>
-                                    <td>Gasolina</td>
-                                    <td>$45.00</td>
-                                    <td><span class="badge badge-danger" style="background-color: hsl(0,93.33%,94.12%); color: hsl(354.25,70.46%,53.53%);">Gasto</span></td>
-                                </tr>
-                                <tr>
-                                    <td>13 Feb 2024</td>
-                                    <td>Servicios</td>
-                                    <td>Internet</td>
-                                    <td>$60.00</td>
-                                    <td><span class="badge badge-danger" style="background-color: hsl(0,93.33%,94.12%); color: hsl(354.25,70.46%,53.53%);">Gasto</span></td>
-                                </tr>
-                                <tr>
-                                    <td>13 Feb 2024</td>
-                                    <td>Freelance</td>
-                                    <td>Proyecto Diseño</td>
-                                    <td>$500.00</td>
-                                    <td><span class="badge badge-success" style="background-color: hsl(140.62,84.21%,92.55%); color: hsl(133.7,61.35%,40.59%);">Ingreso</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Categoría</th>
+                                        <th>Descripción</th>
+                                        <th>Monto</th>
+                                        <th>Tipo</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactionsTableBody">
+                                    <!-- Las transacciones se cargarán dinámicamente aquí -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -133,78 +101,14 @@
         <!-- Action Buttons Row -->
         <div class="row mt-4 mb-4">
             <div class="col-md-12">
-                <button class="btn btn-primary mr-2"><i class="fas fa-plus"></i> Nueva Transacción</button>
+                <a th:href="@{/new-transaction}" class="btn btn-primary mr-2">
+                    <i class="fas fa-plus"></i> Nueva Transacción
+                </a>
                 <button class="btn btn-success mr-2"><i class="fas fa-plus"></i> Añadir Presupuesto</button>
                 <button class="btn btn-purple"><i class="fas fa-plus"></i> Nueva Meta</button>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Agregar Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<!-- Script para las gráficas -->
-<script>
-    // Gráfica de Distribución de Gastos
-    const expenseCtx = document.getElementById('expenseDistributionChart').getContext('2d');
-    new Chart(expenseCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Alimentación', 'Transporte', 'Servicios', 'Entretenimiento', 'Otros'],
-            datasets: [{
-                data: [35, 25, 20, 15, 5],
-                backgroundColor: [
-                    '#FF6384',
-                    '#36A2EB',
-                    '#FFCE56',
-                    '#4BC0C0',
-                    '#9966FF'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            }
-        }
-    });
-
-    // Gráfica de Ingresos y Gastos Mensuales
-    const monthlyCtx = document.getElementById('monthlyIncomeExpenseChart').getContext('2d');
-    new Chart(monthlyCtx, {
-        type: 'bar',
-        data: {
-            labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
-            datasets: [
-                {
-                    label: 'Ingresos',
-                    data: [2800, 3200, 3000, 3500, 3200, 3800],
-                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Gastos',
-                    data: [2200, 2600, 2400, 2800, 2500, 2700],
-                    backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    borderWidth: 1
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-</script>
 
 </html>
