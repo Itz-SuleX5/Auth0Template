@@ -23,13 +23,12 @@
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav mr-auto">
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a href="/" class="nav-link">Home</a>
                     </li>
                 </ul>
-                <ul class="navbar-nav d-none d-md-block">
-
+                <ul class="navbar-nav">
                     <!-- Login button: show if NOT authenticated -->
                     <li sec:authorize="!isAuthenticated()" class="nav-item">
                         <a th:href="@{/oauth2/authorization/okta}" id="qsLoginBtn" class="btn btn-primary btn-margin">Login</a>
@@ -69,7 +68,6 @@
                         </ul>
                     </li>
                     <!-- /Fullsize dropdown -->
-
                 </ul>
 
                 <!-- Responsive login button: show if NOT authenticated -->
