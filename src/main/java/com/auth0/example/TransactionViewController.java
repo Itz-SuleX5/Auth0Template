@@ -25,7 +25,7 @@ public class TransactionViewController {
     private CategoryRepository categoryRepository;
 
     @GetMapping("/new-transaction")
-    public String showNewTransactionForm(Model model) {
+    public String showNewTransactionForm(Model model, @AuthenticationPrincipal OidcUser principal) {
         try {
             logger.info("=== INICIO showNewTransactionForm ===");
             logger.info("Creando nueva transacción");
@@ -36,6 +36,9 @@ public class TransactionViewController {
             List<Category> categories = categoryRepository.findAll();
             logger.info("Categorías encontradas: {}", categories.size());
             model.addAttribute("categories", categories);
+            
+            // Agregar el perfil del usuario al modelo
+            model.addAttribute("profile", principal.getClaims());
             
             logger.info("=== FIN showNewTransactionForm ===");
             return "new-transaction";
