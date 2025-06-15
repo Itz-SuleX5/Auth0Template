@@ -38,6 +38,14 @@ public class SecurityConfig {
             )
             .oauth2Login(oauth2 -> oauth2
                 .loginPage("/oauth2/authorization/okta")
+            )
+            .logout(logout -> logout
+                .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+                .logoutSuccessUrl("/")
+                .addLogoutHandler(logoutHandler())
+                .clearAuthentication(true)
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID")
             );
         
         return http.build();
@@ -46,7 +54,7 @@ public class SecurityConfig {
     private LogoutHandler logoutHandler() {
         return (request, response, authentication) -> {
             try {
-                String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+                String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
                 response.sendRedirect(issuer + "v2/logout?client_id=" + clientId + "&returnTo=" + baseUrl);
             } catch (IOException e) {
                 throw new RuntimeException(e);

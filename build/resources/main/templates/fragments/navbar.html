@@ -42,23 +42,31 @@
                                 class="nav-link dropdown-toggle"
                                 href="#"
                                 id="profileDropDown"
-                                data-toggle="dropdown"
+                                role="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
                         >
                             <!-- Profile image should be set to the profile picture from the id token -->
                             <img th:src="${profile.get('picture')}"  alt="Profile picture" class="nav-user-profile rounded-circle" width="50"/>
                         </a>
-                        <div class="dropdown-menu dropdown-menu-left">
+                        <ul class="dropdown-menu dropdown-menu-end">
                             <!-- Show the user's full name from the id token here -->
-                            <div class="dropdown-header" th:text="${profile.get('name')}"></div>
-                            <a href="/profile" class="dropdown-item dropdown-profile">
-                                <i class="fas fa-user mr-3"></i> Profile
-                            </a>
-                            <form name="logoutForm" th:action="@{/logout}" method="post">
-                                <button type="submit" id="qsLogoutBtn" class="dropdown-item">
-                                    <i class="fas fa-power-off mr-3"></i> Log out
-                                </button>
-                            </form>
-                        </div>
+                            <li><div class="dropdown-header" th:text="${profile.get('name')}"></div></li>
+                            <li><a href="/admin" class="dropdown-item">
+                                <i class="fas fa-user-shield mr-3"></i> Admin
+                            </a></li>
+                            <li><a href="/profile" class="dropdown-item">
+                                <i class="fas fa-user mr-3"></i> Perfil
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form name="logoutForm" th:action="@{/logout}" method="post">
+                                    <button type="submit" id="qsLogoutBtn" class="dropdown-item">
+                                        <i class="fas fa-power-off mr-3"></i> Cerrar Sesión
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
                     </li>
                     <!-- /Fullsize dropdown -->
 
