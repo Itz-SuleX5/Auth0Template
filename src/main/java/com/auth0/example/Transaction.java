@@ -29,6 +29,9 @@ public class Transaction {
     @Column(nullable = false)
     private TransactionType type;
 
+    @Column(name = "user_mail")
+    private String userMail;
+
     // Constructor vacío requerido por JPA
     public Transaction() {
     }
@@ -87,6 +90,14 @@ public class Transaction {
         this.type = type;
     }
 
+    public String getUserMail() {
+        return userMail;
+    }
+
+    public void setUserMail(String userMail) {
+        this.userMail = userMail;
+    }
+
     @Override
     public String toString() {
         return "Transaction{" +
@@ -96,6 +107,7 @@ public class Transaction {
                 ", fecha=" + fecha +
                 ", category=" + (category != null ? category.getId() : null) +
                 ", type=" + type +
+                ", userMail='" + userMail + '\'' +
                 '}';
     }
 } 

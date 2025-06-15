@@ -4,7 +4,7 @@
     <meta charset="utf-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Control de Gastos</title>
+    <title>Spring MVC Security Quickstart</title>
 </head>
 <div class="nav-container mb-3" th:fragment="navbar">
     <nav class="navbar navbar-expand-md navbar-light bg-light">
@@ -25,16 +25,14 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav mr-auto">
                     <li class="nav-item">
-                        <a href="/" class="nav-link">Inicio</a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/new-transaction" class="nav-link">Nueva Transacción</a>
+                        <a href="/" class="nav-link">Home</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav d-none d-md-block">
+
                     <!-- Login button: show if NOT authenticated -->
                     <li sec:authorize="!isAuthenticated()" class="nav-item">
-                        <a th:href="@{/oauth2/authorization/okta}" id="qsLoginBtn" class="btn btn-primary btn-margin">Iniciar Sesión</a>
+                        <a th:href="@{/oauth2/authorization/okta}" id="qsLoginBtn" class="btn btn-primary btn-margin">Login</a>
                     </li>
                     <!-- / Login button -->
 
@@ -46,39 +44,29 @@
                                 id="profileDropDown"
                                 data-toggle="dropdown"
                         >
-                            <!-- Profile image or default icon -->
-                            <th:block th:if="${profile != null && profile.get('picture') != null}">
-                                <img th:src="${profile.get('picture')}" 
-                                     alt="Profile picture" 
-                                     class="nav-user-profile rounded-circle" 
-                                     width="50"/>
-                            </th:block>
-                            <th:block th:unless="${profile != null && profile.get('picture') != null}">
-                                <i class="fas fa-user-circle fa-3x text-primary"></i>
-                            </th:block>
+                            <!-- Profile image should be set to the profile picture from the id token -->
+                            <img th:src="${profile.get('picture')}"  alt="Profile picture" class="nav-user-profile rounded-circle" width="50"/>
                         </a>
                         <div class="dropdown-menu dropdown-menu-left">
                             <!-- Show the user's full name from the id token here -->
-                            <div class="dropdown-header" th:text="${profile != null ? profile.get('name') : 'Usuario'}"></div>
+                            <div class="dropdown-header" th:text="${profile.get('name')}"></div>
                             <a href="/profile" class="dropdown-item dropdown-profile">
-                                <i class="fas fa-user mr-3"></i> Perfil
-                            </a>
-                            <a href="/admin" class="dropdown-item">
-                                <i class="fas fa-cog mr-3"></i> Admin
+                                <i class="fas fa-user mr-3"></i> Profile
                             </a>
                             <form name="logoutForm" th:action="@{/logout}" method="post">
                                 <button type="submit" id="qsLogoutBtn" class="dropdown-item">
-                                    <i class="fas fa-power-off mr-3"></i> Cerrar sesión
+                                    <i class="fas fa-power-off mr-3"></i> Log out
                                 </button>
                             </form>
                         </div>
                     </li>
                     <!-- /Fullsize dropdown -->
+
                 </ul>
 
                 <!-- Responsive login button: show if NOT authenticated -->
                 <ul sec:authorize="!isAuthenticated()" class="navbar-nav d-md-none">
-                    <a th:href="@{/oauth2/authorization/okta}" id="qsLoginBtn" class="btn btn-primary btn-block">Iniciar Sesión</a>
+                    <a th:href="@{/oauth2/authorization/okta}" id="qsLoginBtn" class="btn btn-primary btn-block">Login</a>
                 </ul>
                 <!-- /Responsive login button -->
 
@@ -86,32 +74,20 @@
                 <ul sec:authorize="isAuthenticated()" class="navbar-nav d-md-none justify-content-between" style="min-height: 120px;">
                     <li class="nav-item">
                         <span class="user-info">
-                            <!-- Profile image or default icon -->
-                            <th:block th:if="${profile != null && profile.get('picture') != null}">
-                                <img th:src="${profile.get('picture')}" 
-                                     alt="Profile picture" 
-                                     class="nav-user-profile d-inline-bloc rounded-circle mr-3" 
-                                     width="50"/>
-                            </th:block>
-                            <th:block th:unless="${profile != null && profile.get('picture') != null}">
-                                <i class="fas fa-user-circle fa-3x text-primary mr-3"></i>
-                            </th:block>
+                        <!-- Profile image should be set to the profile picture from the id token -->
+                            <img th:src="${profile.get('picture')}" alt="Profile picture" class="nav-user-profile d-inline-bloc rounded-circle mr-3" width="50"/>
                             <!-- Show the user's full name from the id token here-->
-                            <h6 class="d-inline-block" th:text="${profile != null ? profile.get('name') : 'Usuario'}"></h6>
+                            <h6 class="d-inline-block" th:text="${profile.get('name')}"></h6>
                         </span>
                     </li>
                     <li>
                         <i class="fas fa-user mr-3"></i>
-                        <a th:href="@{/profile}">Perfil</a>
-                    </li>
-                    <li>
-                        <i class="fas fa-cog mr-3"></i>
-                        <a th:href="@{/admin}">Admin</a>
+                        <a th:href="@{/profile}"> Profile</a>
                     </li>
                     <li>
                         <form name="logoutForm" th:action="@{/logout}" method="post">
                             <button type="submit" class="dropdown-item">
-                                <i class="fas fa-power-off mr-3"></i> Cerrar sesión
+                                <i class="fas fa-power-off mr-3"></i> Log out
                             </button>
                         </form>
                     </li>

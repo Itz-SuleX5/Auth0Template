@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -44,10 +46,17 @@ public class TransactionViewController {
     }
 
     @PostMapping("/new-transaction")
-    public String createTransaction(@ModelAttribute Transaction transaction, RedirectAttributes redirectAttributes) {
+    public String createTransaction(@ModelAttribute Transaction transaction, 
+                                  @AuthenticationPrincipal OidcUser principal,
+                                  RedirectAttributes redirectAttributes) {
         try {
             logger.info("=== INICIO createTransaction ===");
             logger.info("Transacción recibida: {}", transaction);
+            
+            // Obtener el correo del usuario actual
+            String userEmail = (String) principal.getClaims().get("email");
+            transaction.setUserMail(userEmail);
+            logger.info("Correo del usuario asignado: {}", userEmail);
             
             // Validar el monto
             if (transaction.getAmount() == null || transaction.getAmount().compareTo(BigDecimal.ZERO) <= 0) {

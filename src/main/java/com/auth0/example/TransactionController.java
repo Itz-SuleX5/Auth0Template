@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
 import java.util.List;
 import java.util.Optional;
@@ -48,9 +50,15 @@ public class TransactionController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createTransaction(@RequestBody Transaction transaction) {
+    public ResponseEntity<?> createTransaction(@RequestBody Transaction transaction,
+                                             @AuthenticationPrincipal OidcUser principal) {
         try {
             logger.info("Recibida solicitud para crear transacción: {}", transaction);
+            
+            // Obtener el correo del usuario actual
+            String userEmail = (String) principal.getClaims().get("email");
+            transaction.setUserMail(userEmail);
+            logger.info("Correo del usuario asignado: {}", userEmail);
             
             if (transaction.getAmount() == null || transaction.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
                 logger.error("Monto inválido: {}", transaction.getAmount());
