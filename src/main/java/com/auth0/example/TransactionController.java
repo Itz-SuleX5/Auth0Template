@@ -30,16 +30,30 @@ public class TransactionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Transaction>> getAllTransactions() {
+    public ResponseEntity<List<Transaction>> getAllTransactions(@AuthenticationPrincipal OidcUser principal) {
         try {
-            logger.info("GET /api/transactions - Obteniendo todas las transacciones");
-            List<Transaction> transactions = transactionRepository.findAll();
+            if (principal == null) {
+                logger.warn("Intento de acceso sin autenticación");
+                return ResponseEntity.ok(List.of());
+            }
+
+            logger.info("GET /api/transactions - Obteniendo transacciones del usuario");
+            String userEmail = principal.getEmail();
+            if (userEmail == null) {
+                logger.error("Email del usuario no encontrado en los claims");
+                return ResponseEntity.ok(List.of());
+            }
+            
+            logger.info("Email del usuario: {}", userEmail);
+            List<Transaction> transactions = transactionRepository.findAll().stream()
+                .filter(t -> userEmail.equals(t.getUserMail()))
+                .toList();
+                
             logger.info("Transacciones encontradas: {}", transactions.size());
-            logger.debug("Transacciones: {}", transactions);
             return ResponseEntity.ok(transactions);
         } catch (Exception e) {
-            logger.error("Error al obtener transacciones", e);
-            return ResponseEntity.internalServerError().build();
+            logger.error("Error al obtener transacciones: {}", e.getMessage(), e);
+            return ResponseEntity.ok(List.of());
         }
     }
 

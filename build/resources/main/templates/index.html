@@ -111,4 +111,50 @@
     </div>
 </div>
 
+<!-- Script para cargar las transacciones -->
+<script th:inline="javascript">
+    const userEmail = /*[[${userEmail}]]*/ '';
+    
+    function loadTransactions() {
+        const tableBody = document.getElementById('transactionsTableBody');
+        
+        fetch('/api/transactions')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error al cargar las transacciones');
+                }
+                return response.json();
+            })
+            .then(transactions => {
+                tableBody.innerHTML = '';
+                
+                if (transactions.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No hay transacciones disponibles</td></tr>';
+                    return;
+                }
+                
+                transactions.forEach(transaction => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${new Date(transaction.fecha).toLocaleDateString()}</td>
+                        <td>${transaction.category ? transaction.category.name : 'Sin categoría'}</td>
+                        <td>${transaction.description}</td>
+                        <td class="${transaction.type === 'INGRESO' ? 'text-success' : 'text-danger'}">
+                            ${transaction.type === 'INGRESO' ? '+' : '-'}$${transaction.amount}
+                        </td>
+                        <td>${transaction.type}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar las transacciones</td></tr>';
+            });
+    }
+
+    // Cargar transacciones cuando la página se carga
+    document.addEventListener('DOMContentLoaded', loadTransactions);
+</script>
+
 </html>
