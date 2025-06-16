@@ -57,7 +57,7 @@
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Distribución de Gastos</h5>
-                        <canvas id="expenseDistributionChart"></canvas>
+                        <div id="expenseDistributionChart" style="width: 100%; height: 300px;"></div>
                     </div>
                 </div>
             </div>
@@ -111,8 +111,8 @@
     </div>
 </div>
 
-<!-- Script para cargar las transacciones -->
-<script th:inline="javascript">
+<!-- Scripts -->
+<script th:inline="javascript" layout:fragment="scripts">
     const userEmail = /*[[${userEmail}]]*/ '';
     
     function loadTransactions() {
@@ -133,6 +133,9 @@
                     return;
                 }
                 
+                let totalIncome = 0;
+                let totalExpenses = 0;
+                
                 transactions.forEach(transaction => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
@@ -142,10 +145,26 @@
                         <td class="${transaction.type === 'INGRESO' ? 'text-success' : 'text-danger'}">
                             ${transaction.type === 'INGRESO' ? '+' : '-'}$${transaction.amount}
                         </td>
-                        <td>${transaction.type}</td>
+                        <td>
+                            <span class="badge rounded-pill ${transaction.type === 'INGRESO' ? 'bg-success' : 'bg-danger'} text-white">
+                                ${transaction.type}
+                            </span>
+                        </td>
                     `;
                     tableBody.appendChild(row);
+
+                    if (transaction.type === 'INGRESO') {
+                        totalIncome += parseFloat(transaction.amount);
+                    } else {
+                        totalExpenses += parseFloat(transaction.amount);
+                    }
                 });
+
+                // Actualizar los totales en las cards
+                document.getElementById('totalIncome').textContent = `$${totalIncome.toFixed(2)}`;
+                document.getElementById('totalExpenses').textContent = `$${totalExpenses.toFixed(2)}`;
+                document.getElementById('totalBalance').textContent = `$${(totalIncome - totalExpenses).toFixed(2)}`;
+                document.getElementById('totalSavings').textContent = `$${(totalIncome - totalExpenses).toFixed(2)}`;
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -153,8 +172,39 @@
             });
     }
 
-    // Cargar transacciones cuando la página se carga
-    document.addEventListener('DOMContentLoaded', loadTransactions);
+    // Cargar la librería de Google Charts
+    google.charts.load('current', {'packages':['corechart']});
+    
+    // Función para dibujar la gráfica
+    function drawExpenseDistributionChart() {
+        // Datos de ejemplo para la distribución de gastos
+        var data = google.visualization.arrayToDataTable([
+            ['Categoría', 'Monto'],
+            ['Vivienda', 1200],
+            ['Alimentación', 800],
+            ['Transporte', 400],
+            ['Entretenimiento', 300],
+            ['Servicios', 250],
+            ['Otros', 150]
+        ]);
+
+        var options = {
+            title: 'Distribución de Gastos Mensuales',
+            is3D: true,
+            backgroundColor: 'transparent',
+            legend: {position: 'right'},
+            colors: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
+        };
+
+        var chart = new google.visualization.PieChart(document.getElementById('expenseDistributionChart'));
+        chart.draw(data, options);
+    }
+
+    // Cargar transacciones y gráfica cuando la página se carga
+    document.addEventListener('DOMContentLoaded', function() {
+        loadTransactions();
+        google.charts.setOnLoadCallback(drawExpenseDistributionChart);
+    });
 </script>
 
 </html>
