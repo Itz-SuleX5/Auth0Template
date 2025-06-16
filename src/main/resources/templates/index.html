@@ -177,27 +177,56 @@
     
     // Función para dibujar la gráfica
     function drawExpenseDistributionChart() {
-        // Datos de ejemplo para la distribución de gastos
-        var data = google.visualization.arrayToDataTable([
-            ['Categoría', 'Monto'],
-            ['Vivienda', 1200],
-            ['Alimentación', 800],
-            ['Transporte', 400],
-            ['Entretenimiento', 300],
-            ['Servicios', 250],
-            ['Otros', 150]
-        ]);
+        // Obtener los datos de las transacciones
+        fetch('/api/transactions')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error al cargar las transacciones');
+                }
+                return response.json();
+            })
+            .then(transactions => {
+                // Filtrar solo los gastos y agrupar por categoría
+                const gastosPorCategoria = {};
+                transactions.forEach(transaction => {
+                    if (transaction.type === 'GASTO') {
+                        const categoria = transaction.category ? transaction.category.name : 'Sin categoría';
+                        gastosPorCategoria[categoria] = (gastosPorCategoria[categoria] || 0) + parseFloat(transaction.amount);
+                    }
+                });
 
-        var options = {
-            title: 'Distribución de Gastos Mensuales',
-            is3D: true,
-            backgroundColor: 'transparent',
-            legend: {position: 'right'},
-            colors: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
-        };
+                // Convertir los datos al formato que espera Google Charts
+                const data = new google.visualization.DataTable();
+                data.addColumn('string', 'Categoría');
+                data.addColumn('number', 'Monto');
 
-        var chart = new google.visualization.PieChart(document.getElementById('expenseDistributionChart'));
-        chart.draw(data, options);
+                // Agregar las filas de datos
+                Object.entries(gastosPorCategoria).forEach(([categoria, monto]) => {
+                    data.addRow([categoria, monto]);
+                });
+
+                var options = {
+                    title: '',
+                    is3D: true,
+                    backgroundColor: 'transparent',
+                    legend: {position: 'right'},
+                    colors: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
+                    pieSliceText: 'percentage',
+                    tooltip: {
+                        text: 'percentage',
+                        format: 'percent'
+                    }
+                };
+
+                var chart = new google.visualization.PieChart(document.getElementById('expenseDistributionChart'));
+                chart.draw(data, options);
+            })
+            .catch(error => {
+                console.error('Error al cargar los datos para la gráfica:', error);
+                // Mostrar un mensaje de error en el contenedor de la gráfica
+                document.getElementById('expenseDistributionChart').innerHTML = 
+                    '<div class="alert alert-danger">Error al cargar los datos de la gráfica</div>';
+            });
     }
 
     // Cargar transacciones y gráfica cuando la página se carga
