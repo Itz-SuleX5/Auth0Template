@@ -20,7 +20,7 @@
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
 
-                        <form id="newTransactionForm" th:action="@{/new-transaction}" method="POST">
+                        <form id="newTransactionForm" th:action="@{/new-transaction}" method="POST" enctype="multipart/form-data">
                             <div class="mb-3">
                                 <label for="transactionType" class="form-label">Tipo de Transacción</label>
                                 <select class="form-select" id="transactionType" name="type" required>
@@ -52,6 +52,20 @@
                             <div class="mb-3">
                                 <label for="transactionDate" class="form-label">Fecha</label>
                                 <input type="date" class="form-control" id="transactionDate" name="fecha" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="paymentMethod" class="form-label">Método de Pago</label>
+                                <select class="form-select" id="paymentMethod" name="paymentMethod" required>
+                                    <option value="">Seleccione un método de pago</option>
+                                    <option value="EFECTIVO">Efectivo</option>
+                                    <option value="TRANSFERENCIA">Transferencia Electrónica</option>
+                                    <option value="CRYPTO">Crypto</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="receipt" class="form-label">Comprobante</label>
+                                <input type="file" class="form-control" id="receipt" name="receipt" accept=".pdf,.jpg,.jpeg,.png">
+                                <small class="form-text text-muted">Formatos permitidos: PDF, JPG, JPEG, PNG</small>
                             </div>
                             <div class="d-flex justify-content-between">
                                 <a th:href="@{/}" class="btn btn-secondary">Cancelar</a>
@@ -87,6 +101,62 @@
             alert('Error al cargar las categorías');
         }
     }
+
+    // Función para enviar el formulario
+    document.getElementById('newTransactionForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData();
+        
+        // Crear objeto de transacción
+        const transaction = {
+            type: document.getElementById('transactionType').value,
+            amount: document.getElementById('transactionAmount').value,
+            description: document.getElementById('transactionDescription').value,
+            fecha: document.getElementById('transactionDate').value,
+            paymentMethod: document.getElementById('paymentMethod').value,
+            category: {
+                id: document.getElementById('transactionCategory').value
+            }
+        };
+        
+        console.log('Datos de la transacción:', transaction);
+        
+        // Agregar la transacción como JSON
+        formData.append('transaction', new Blob([JSON.stringify(transaction)], {
+            type: 'application/json'
+        }));
+        
+        // Agregar el comprobante si existe
+        const receipt = document.getElementById('receipt').files[0];
+        if (receipt) {
+            console.log('Archivo seleccionado:', receipt.name, 'Tipo:', receipt.type);
+            formData.append('receipt', receipt);
+        } else {
+            console.log('No se seleccionó ningún archivo');
+        }
+        
+        try {
+            console.log('Enviando formulario...');
+            const response = await fetch('/api/transactions', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error('Error al crear la transacción: ' + errorData);
+            }
+            
+            const result = await response.json();
+            console.log('Respuesta del servidor:', result);
+            
+            window.location.href = '/';
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al crear la transacción: ' + error.message);
+        }
+    });
 
     // Cargar categorías cuando el documento esté listo
     document.addEventListener('DOMContentLoaded', loadCategories);

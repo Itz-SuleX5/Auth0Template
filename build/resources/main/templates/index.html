@@ -134,6 +134,8 @@
                                         <th>Descripción</th>
                                         <th>Monto</th>
                                         <th>Tipo</th>
+                                        <th>Método de Pago</th>
+                                        <th>Comprobante</th>
                                     </tr>
                                 </thead>
                                 <tbody id="transactionsTableBody">
@@ -285,6 +287,19 @@
                     <span class="badge rounded-pill ${transaction.type === 'INGRESO' ? 'bg-success' : 'bg-danger'} text-white">
                         ${transaction.type}
                     </span>
+                </td>
+                <td>
+                    <span class="badge rounded-pill bg-info text-white">
+                        ${transaction.paymentMethod || 'No especificado'}
+                    </span>
+                </td>
+                <td>
+                    ${transaction.receipt ? 
+                        `<a href="/api/receipts/${transaction.id}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-file-alt"></i> Ver comprobante
+                        </a>` : 
+                        '<span class="text-muted">Sin comprobante</span>'
+                    }
                 </td>
             `;
             tableBody.appendChild(row);

@@ -32,13 +32,26 @@ public class Transaction {
     @Column(name = "user_mail")
     private String userMail;
 
-    // Constructor vacío requerido por JPA
-    public Transaction() {
-    }
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method")
+    private PaymentMethod paymentMethod;
+
+    @Column(name = "receipt_path")
+    private String receiptPath;
 
     public enum TransactionType {
         INGRESO,
         GASTO
+    }
+
+    public enum PaymentMethod {
+        EFECTIVO,
+        TRANSFERENCIA,
+        CRYPTO
+    }
+
+    // Constructor vacío requerido por JPA
+    public Transaction() {
     }
 
     // Getters y Setters
@@ -98,6 +111,22 @@ public class Transaction {
         this.userMail = userMail;
     }
 
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public String getReceiptPath() {
+        return receiptPath;
+    }
+
+    public void setReceiptPath(String receiptPath) {
+        this.receiptPath = receiptPath;
+    }
+
     @Override
     public String toString() {
         return "Transaction{" +
@@ -108,6 +137,8 @@ public class Transaction {
                 ", category=" + (category != null ? category.getId() : null) +
                 ", type=" + type +
                 ", userMail='" + userMail + '\'' +
+                ", paymentMethod=" + paymentMethod +
+                ", receiptPath='" + receiptPath + '\'' +
                 '}';
     }
 } 
