@@ -65,7 +65,7 @@
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Ingresos y Gastos Mensuales</h5>
-                        <canvas id="monthlyIncomeExpenseChart"></canvas>
+                        <div id="monthlyIncomeExpenseChart" style="width: 100%; height: 300px;"></div>
                     </div>
                 </div>
             </div>
@@ -175,9 +175,8 @@
     // Cargar la librería de Google Charts
     google.charts.load('current', {'packages':['corechart']});
     
-    // Función para dibujar la gráfica
+    // Función para dibujar la gráfica de pastel
     function drawExpenseDistributionChart() {
-        // Obtener los datos de las transacciones
         fetch('/api/transactions')
             .then(response => {
                 if (!response.ok) {
@@ -186,7 +185,6 @@
                 return response.json();
             })
             .then(transactions => {
-                // Filtrar solo los gastos y agrupar por categoría
                 const gastosPorCategoria = {};
                 transactions.forEach(transaction => {
                     if (transaction.type === 'GASTO') {
@@ -195,12 +193,10 @@
                     }
                 });
 
-                // Convertir los datos al formato que espera Google Charts
                 const data = new google.visualization.DataTable();
                 data.addColumn('string', 'Categoría');
                 data.addColumn('number', 'Monto');
 
-                // Agregar las filas de datos
                 Object.entries(gastosPorCategoria).forEach(([categoria, monto]) => {
                     data.addRow([categoria, monto]);
                 });
@@ -223,16 +219,109 @@
             })
             .catch(error => {
                 console.error('Error al cargar los datos para la gráfica:', error);
-                // Mostrar un mensaje de error en el contenedor de la gráfica
                 document.getElementById('expenseDistributionChart').innerHTML = 
                     '<div class="alert alert-danger">Error al cargar los datos de la gráfica</div>';
             });
     }
 
-    // Cargar transacciones y gráfica cuando la página se carga
+    // Función para dibujar la gráfica de barras
+    function drawMonthlyIncomeExpenseChart() {
+        fetch('/api/transactions')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error al cargar las transacciones');
+                }
+                return response.json();
+            })
+            .then(transactions => {
+                // Agrupar transacciones por mes y año
+                const datosPorMes = {};
+                
+                transactions.forEach(transaction => {
+                    const fecha = new Date(transaction.fecha);
+                    const mes = fecha.toLocaleString('es-ES', { month: 'long' });
+                    const año = fecha.getFullYear();
+                    const clave = `${año}-${mes}`;
+                    const monto = parseFloat(transaction.amount);
+                    
+                    if (!datosPorMes[clave]) {
+                        datosPorMes[clave] = {
+                            mes: mes,
+                            año: año,
+                            ingresos: 0,
+                            gastos: 0
+                        };
+                    }
+                    
+                    if (transaction.type === 'INGRESO') {
+                        datosPorMes[clave].ingresos += monto;
+                    } else {
+                        datosPorMes[clave].gastos += monto;
+                    }
+                });
+
+                // Convertir a array y ordenar por año y mes
+                const mesesOrdenados = Object.values(datosPorMes).sort((a, b) => {
+                    if (a.año !== b.año) {
+                        return a.año - b.año;
+                    }
+                    const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 
+                                 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+                    return meses.indexOf(a.mes) - meses.indexOf(b.mes);
+                });
+
+                // Crear la tabla de datos para Google Charts
+                const data = new google.visualization.DataTable();
+                data.addColumn('string', 'Mes');
+                data.addColumn('number', 'Ingresos');
+                data.addColumn('number', 'Gastos');
+
+                // Agregar las filas de datos ordenadas
+                mesesOrdenados.forEach(datos => {
+                    data.addRow([`${datos.mes} ${datos.año}`, datos.ingresos, datos.gastos]);
+                });
+
+                var options = {
+                    title: '',
+                    backgroundColor: 'transparent',
+                    legend: { position: 'top' },
+                    bars: 'vertical',
+                    series: {
+                        0: { color: '#28a745' }, // Color verde para ingresos
+                        1: { color: '#dc3545' }  // Color rojo para gastos
+                    },
+                    vAxis: {
+                        format: 'currency',
+                        gridlines: {
+                            color: 'transparent'
+                        }
+                    },
+                    hAxis: {
+                        gridlines: {
+                            color: 'transparent'
+                        },
+                        slantedText: true,
+                        slantedTextAngle: 45
+                    }
+                };
+
+                var chart = new google.visualization.ColumnChart(document.getElementById('monthlyIncomeExpenseChart'));
+                chart.draw(data, options);
+            })
+            .catch(error => {
+                console.error('Error al cargar los datos para la gráfica:', error);
+                document.getElementById('monthlyIncomeExpenseChart').innerHTML = 
+                    '<div class="alert alert-danger">Error al cargar los datos de la gráfica</div>';
+            });
+    }
+
+    // Cargar transacciones y gráficas cuando la página se carga
     document.addEventListener('DOMContentLoaded', function() {
         loadTransactions();
-        google.charts.setOnLoadCallback(drawExpenseDistributionChart);
+        google.charts.setOnLoadCallback(function() {
+            drawExpenseDistributionChart();
+            drawMonthlyIncomeExpenseChart();
+        });
     });
 </script>
 
