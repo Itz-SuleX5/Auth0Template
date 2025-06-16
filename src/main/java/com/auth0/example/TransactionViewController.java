@@ -6,6 +6,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import java.math.BigDecimal;
 import java.util.List;
+import java.io.IOException;
 
 @Controller
 public class TransactionViewController {
@@ -23,6 +26,9 @@ public class TransactionViewController {
 
     @Autowired
     private CategoryRepository categoryRepository;
+
+    @Autowired
+    private FileStorageService fileStorageService;
 
     @GetMapping("/new-transaction")
     public String showNewTransactionForm(Model model, @AuthenticationPrincipal OidcUser principal) {
@@ -49,9 +55,11 @@ public class TransactionViewController {
     }
 
     @PostMapping("/new-transaction")
-    public String createTransaction(@ModelAttribute Transaction transaction, 
-                                  @AuthenticationPrincipal OidcUser principal,
-                                  RedirectAttributes redirectAttributes) {
+    public String createTransaction(
+            @ModelAttribute Transaction transaction,
+            @RequestParam(value = "receipt", required = false) MultipartFile receipt,
+            @AuthenticationPrincipal OidcUser principal,
+            RedirectAttributes redirectAttributes) {
         try {
             logger.info("=== INICIO createTransaction ===");
             logger.info("Transacción recibida: {}", transaction);
@@ -82,6 +90,23 @@ public class TransactionViewController {
                 return "redirect:/new-transaction";
             }
 
+            // Manejar la subida del archivo si existe
+            if (receipt != null && !receipt.isEmpty()) {
+                logger.info("Procesando archivo adjunto: {} ({} bytes)", 
+                    receipt.getOriginalFilename(), receipt.getSize());
+                try {
+                    String filePath = fileStorageService.storeFile(receipt, userEmail);
+                    transaction.setReceiptPath(filePath);
+                    logger.info("Archivo guardado exitosamente en: {}", filePath);
+                } catch (IOException e) {
+                    logger.error("Error al guardar el archivo", e);
+                    redirectAttributes.addFlashAttribute("error", "Error al guardar el archivo: " + e.getMessage());
+                    return "redirect:/new-transaction";
+                }
+            } else {
+                logger.info("No se adjuntó ningún archivo a la transacción");
+            }
+
             logger.info("Guardando transacción");
             transactionRepository.save(transaction);
             logger.info("Transacción guardada exitosamente");
@@ -91,7 +116,8 @@ public class TransactionViewController {
             return "redirect:/";
         } catch (Exception e) {
             logger.error("ERROR CRÍTICO en createTransaction", e);
-            throw new RuntimeException("Error al crear la transacción", e);
+            redirectAttributes.addFlashAttribute("error", "Error al crear la transacción: " + e.getMessage());
+            return "redirect:/new-transaction";
         }
     }
 } 

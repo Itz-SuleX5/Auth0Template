@@ -7,10 +7,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
 
 import java.util.List;
 import java.util.Optional;
 import java.math.BigDecimal;
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -24,6 +27,9 @@ public class TransactionController {
 
     @Autowired
     private CategoryRepository categoryRepository;
+
+    @Autowired
+    private FileStorageService fileStorageService;
 
     public TransactionController() {
         logger.info("Inicializando TransactionController");
@@ -63,9 +69,11 @@ public class TransactionController {
         return ResponseEntity.ok("El controlador de transacciones está funcionando - " + System.currentTimeMillis());
     }
 
-    @PostMapping
-    public ResponseEntity<?> createTransaction(@RequestBody Transaction transaction,
-                                             @AuthenticationPrincipal OidcUser principal) {
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> createTransaction(
+            @RequestPart("transaction") Transaction transaction,
+            @RequestPart(value = "receipt", required = false) MultipartFile receipt,
+            @AuthenticationPrincipal OidcUser principal) {
         try {
             logger.info("Recibida solicitud para crear transacción: {}", transaction);
             
@@ -91,6 +99,24 @@ public class TransactionController {
             }
 
             transaction.setCategory(categoryOpt.get());
+
+            // Manejar la subida del archivo si existe
+            if (receipt != null && !receipt.isEmpty()) {
+                logger.info("Procesando archivo adjunto: {} ({} bytes)", 
+                    receipt.getOriginalFilename(), receipt.getSize());
+                try {
+                    String filePath = fileStorageService.storeFile(receipt, userEmail);
+                    transaction.setReceiptPath(filePath);
+                    logger.info("Archivo guardado exitosamente en: {}", filePath);
+                } catch (IOException e) {
+                    logger.error("Error al guardar el archivo", e);
+                    return ResponseEntity.internalServerError()
+                        .body("Error al guardar el archivo: " + e.getMessage());
+                }
+            } else {
+                logger.info("No se adjuntó ningún archivo a la transacción");
+            }
+
             Transaction savedTransaction = transactionRepository.save(transaction);
             logger.info("Transacción creada exitosamente: {}", savedTransaction);
             return ResponseEntity.ok(savedTransaction);

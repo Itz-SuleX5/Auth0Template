@@ -120,8 +120,6 @@
             }
         };
         
-        console.log('Datos de la transacción:', transaction);
-        
         // Agregar la transacción como JSON
         formData.append('transaction', new Blob([JSON.stringify(transaction)], {
             type: 'application/json'
@@ -130,10 +128,8 @@
         // Agregar el comprobante si existe
         const receipt = document.getElementById('receipt').files[0];
         if (receipt) {
-            console.log('Archivo seleccionado:', receipt.name, 'Tipo:', receipt.type);
+            console.log('Archivo seleccionado:', receipt.name, 'Tipo:', receipt.type, 'Tamaño:', receipt.size);
             formData.append('receipt', receipt);
-        } else {
-            console.log('No se seleccionó ningún archivo');
         }
         
         try {
@@ -149,8 +145,7 @@
             }
             
             const result = await response.json();
-            console.log('Respuesta del servidor:', result);
-            
+            console.log('Transacción creada exitosamente:', result);
             window.location.href = '/';
         } catch (error) {
             console.error('Error:', error);

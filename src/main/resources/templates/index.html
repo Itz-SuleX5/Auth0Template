@@ -294,8 +294,8 @@
                     </span>
                 </td>
                 <td>
-                    ${transaction.receipt ? 
-                        `<a href="/api/receipts/${transaction.id}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    ${transaction.receiptPath ? 
+                        `<a href="/api/receipts/${transaction.receiptPath}" target="_blank" class="btn btn-sm btn-outline-primary">
                             <i class="fas fa-file-alt"></i> Ver comprobante
                         </a>` : 
                         '<span class="text-muted">Sin comprobante</span>'
