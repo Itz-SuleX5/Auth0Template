@@ -95,6 +95,23 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
+                                <label for="filterPaymentMethod" class="form-label">Método de Pago</label>
+                                <select class="form-select" id="filterPaymentMethod">
+                                    <option value="">Todos los métodos</option>
+                                    <option value="EFECTIVO">Efectivo</option>
+                                    <option value="TRANSFERENCIA">Transferencia</option>
+                                    <option value="CRYPTO">Crypto</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="filterReceipt" class="form-label">Comprobante</label>
+                                <select class="form-select" id="filterReceipt">
+                                    <option value="">Todos</option>
+                                    <option value="with">Con comprobante</option>
+                                    <option value="without">Sin comprobante</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
                                 <label for="filterAmount" class="form-label">Monto</label>
                                 <input type="number" class="form-control" id="filterAmount" placeholder="Monto mínimo">
                             </div>
@@ -215,6 +232,8 @@
         const tableBody = document.getElementById('transactionsTableBody');
         const categoryFilter = document.getElementById('filterCategory').value;
         const typeFilter = document.getElementById('filterType').value;
+        const paymentMethodFilter = document.getElementById('filterPaymentMethod').value;
+        const receiptFilter = document.getElementById('filterReceipt').value;
         const amountFilter = parseFloat(document.getElementById('filterAmount').value) || 0;
         const dateFrom = document.getElementById('filterDateFrom').value;
         const dateTo = document.getElementById('filterDateTo').value;
@@ -224,6 +243,8 @@
             const categoryMatch = !categoryFilter || 
                                 (transaction.category && transaction.category.name === categoryFilter);
             const typeMatch = !typeFilter || transaction.type === typeFilter;
+            const paymentMethodMatch = !paymentMethodFilter || transaction.paymentMethod === paymentMethodFilter;
+            const receiptMatch = !receiptFilter || (receiptFilter === 'with' && transaction.receiptPath) || (receiptFilter === 'without' && !transaction.receiptPath);
             const amountMatch = !amountFilter || Math.abs(parseFloat(transaction.amount)) >= amountFilter;
             
             // Filtro de rango de fechas
@@ -239,7 +260,7 @@
             const dateMatch = (!fromDate || transactionDate >= fromDate) && 
                             (!toDate || transactionDate < toDate);
             
-            return categoryMatch && typeMatch && amountMatch && dateMatch;
+            return categoryMatch && typeMatch && paymentMethodMatch && receiptMatch && amountMatch && dateMatch;
         });
         
         // Ordenar transacciones
@@ -255,6 +276,8 @@
     function clearFilters() {
         document.getElementById('filterCategory').value = '';
         document.getElementById('filterType').value = '';
+        document.getElementById('filterPaymentMethod').value = '';
+        document.getElementById('filterReceipt').value = '';
         document.getElementById('filterAmount').value = '';
         document.getElementById('filterDateFrom').value = '';
         document.getElementById('filterDateTo').value = '';
