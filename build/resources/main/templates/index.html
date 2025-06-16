@@ -171,8 +171,8 @@
                 <a th:href="@{/new-transaction}" class="btn btn-primary mr-2">
                     <i class="fas fa-plus"></i> Nueva Transacción
                 </a>
-                <button class="btn btn-success mr-2"><i class="fas fa-plus"></i> Añadir Presupuesto</button>
-                <button class="btn btn-purple"><i class="fas fa-plus"></i> Nueva Meta</button>
+                <!--<button class="btn btn-success mr-2"><i class="fas fa-plus"></i> Añadir Presupuesto</button>
+                <button class="btn btn-purple"><i class="fas fa-plus"></i> Nueva Meta</button>-->
             </div>
         </div>
     </div>
@@ -312,7 +312,10 @@
                     </span>
                 </td>
                 <td>
-                    <span class="badge rounded-pill bg-info text-white">
+                    <span class="badge rounded-pill ${transaction.paymentMethod === 'CRYPTO' ? 'bg-warning' : 
+                                                      transaction.paymentMethod === 'EFECTIVO' ? 'bg-success' : 
+                                                      transaction.paymentMethod === 'TRANSFERENCIA' ? 'bg-info' : 
+                                                      'bg-secondary'} text-white">
                         ${transaction.paymentMethod || 'No especificado'}
                     </span>
                 </td>
@@ -335,10 +338,10 @@
         });
 
         // Actualizar los totales en las cards
-        document.getElementById('totalIncome').textContent = `$${totalIncome.toFixed(2)}`;
-        document.getElementById('totalExpenses').textContent = `$${totalExpenses.toFixed(2)}`;
-        document.getElementById('totalBalance').textContent = `$${(totalIncome - totalExpenses).toFixed(2)}`;
-        document.getElementById('totalSavings').textContent = `$${(totalIncome - totalExpenses).toFixed(2)}`;
+        document.getElementById('totalIncome').textContent = `$${totalIncome.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('totalExpenses').textContent = `$${totalExpenses.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('totalBalance').textContent = `$${(totalIncome - totalExpenses).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('totalSavings').textContent = `$${(totalIncome - totalExpenses).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     }
 
     // Cargar la librería de Google Charts
