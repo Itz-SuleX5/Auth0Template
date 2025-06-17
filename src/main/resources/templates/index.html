@@ -143,7 +143,7 @@
                         </div>
 
                         <div class="table-responsive">
-                            <table class="table table-striped">
+                            <table class="table">
                                 <thead>
                                     <tr>
                                         <th>Fecha</th>
@@ -155,8 +155,8 @@
                                         <th>Comprobante</th>
                                     </tr>
                                 </thead>
-                                <tbody id="transactionsTableBody">
-                                    <!-- Las transacciones se cargarán dinámicamente aquí -->
+                                <tbody id="recentTransactionsTable">
+                                    <!-- Las transacciones se cargarán aquí dinámicamente -->
                                 </tbody>
                             </table>
                         </div>
@@ -187,7 +187,7 @@
     let allTransactions = []; // Variable global para almacenar todas las transacciones
     
     function loadTransactions() {
-        const tableBody = document.getElementById('transactionsTableBody');
+        const tableBody = document.getElementById('recentTransactionsTable');
         
         fetch('/api/transactions')
             .then(response => {
@@ -197,42 +197,127 @@
                 return response.json();
             })
             .then(transactions => {
-                allTransactions = transactions; // Guardar todas las transacciones
-                updateCategoryFilter(transactions); // Actualizar el filtro de categorías
-                applyFilters(); // Aplicar filtros iniciales
+                renderTransactions(transactions);
+                updateCategoryFilter(transactions);
             })
             .catch(error => {
                 console.error('Error:', error);
-                tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar las transacciones</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error al cargar las transacciones</td></tr>';
             });
     }
 
+    function renderTransactions(transactions) {
+        const tableBody = document.getElementById('recentTransactionsTable');
+        tableBody.innerHTML = '';
+
+        if (!transactions || transactions.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No hay transacciones disponibles</td></tr>';
+            return;
+        }
+
+        transactions.forEach(transaction => {
+            const row = document.createElement('tr');
+            const categoryName = transaction.category && transaction.category.parentCategory ? 
+                `${transaction.category.parentCategory.name}(${transaction.category.name})` : 
+                (transaction.category ? transaction.category.name : 'Sin categoría');
+            
+            row.innerHTML = `
+                <td>${formatDate(transaction.fecha)}</td>
+                <td>${categoryName}</td>
+                <td>${transaction.description || ''}</td>
+                <td class="${transaction.type === 'GASTO' ? 'text-danger' : 'text-success'}">
+                    ${transaction.type === 'GASTO' ? '-' : '+'}$${formatAmount(transaction.amount)}
+                </td>
+                <td>
+                    <span class="badge rounded-pill ${transaction.type === 'INGRESO' ? 'bg-success' : 'bg-danger'} text-white">
+                        ${transaction.type}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge rounded-pill ${transaction.paymentMethod === 'CRYPTO' ? 'bg-warning' : 
+                                                      transaction.paymentMethod === 'EFECTIVO' ? 'bg-success' : 
+                                                      transaction.paymentMethod === 'TRANSFERENCIA' ? 'bg-info' : 
+                                                      'bg-secondary'} text-white">
+                        ${transaction.paymentMethod || 'No especificado'}
+                    </span>
+                </td>
+                <td>
+                    ${transaction.receiptPath ? 
+                        `<a href="/api/receipts/${transaction.receiptPath}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-file-alt"></i> Ver comprobante
+                        </a>` : 
+                        '<span class="text-muted">Sin comprobante</span>'
+                    }
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        // Actualizar los totales
+        updateTotals(transactions);
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString();
+    }
+
+    function formatAmount(amount) {
+        if (!amount) return '0.00';
+        return parseFloat(amount).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    function updateTotals(transactions) {
+        let totalIncome = 0;
+        let totalExpenses = 0;
+
+        transactions.forEach(transaction => {
+            const amount = parseFloat(transaction.amount) || 0;
+            if (transaction.type === 'INGRESO') {
+                totalIncome += amount;
+            } else if (transaction.type === 'GASTO') {
+                totalExpenses += amount;
+            }
+        });
+
+        document.getElementById('totalIncome').textContent = `$${formatAmount(totalIncome)}`;
+        document.getElementById('totalExpenses').textContent = `$${formatAmount(totalExpenses)}`;
+        document.getElementById('totalBalance').textContent = `$${formatAmount(totalIncome - totalExpenses)}`;
+        document.getElementById('totalSavings').textContent = `$${formatAmount(totalIncome - totalExpenses)}`;
+    }
+
     function updateCategoryFilter(transactions) {
-        const categoryFilter = document.getElementById('filterCategory');
+        const filterSelect = document.getElementById('filterCategory');
         const categories = new Set();
         
         transactions.forEach(transaction => {
-            if (transaction.category && transaction.category.name) {
-                categories.add(transaction.category.name);
+            if (transaction.category) {
+                if (transaction.category.parentCategory) {
+                    categories.add(`${transaction.category.parentCategory.name}(${transaction.category.name})`);
+                } else {
+                    categories.add(transaction.category.name);
+                }
             }
         });
+
+        // Mantener la opción "Todas las categorías"
+        filterSelect.innerHTML = '<option value="">Todas las categorías</option>';
         
-        // Limpiar opciones existentes excepto la primera
-        while (categoryFilter.options.length > 1) {
-            categoryFilter.remove(1);
-        }
-        
-        // Agregar nuevas opciones
-        categories.forEach(category => {
+        // Agregar las categorías únicas
+        Array.from(categories).sort().forEach(category => {
             const option = document.createElement('option');
             option.value = category;
             option.textContent = category;
-            categoryFilter.appendChild(option);
+            filterSelect.appendChild(option);
         });
     }
 
     function applyFilters() {
-        const tableBody = document.getElementById('transactionsTableBody');
+        const tableBody = document.getElementById('recentTransactionsTable');
         const categoryFilter = document.getElementById('filterCategory').value;
         const typeFilter = document.getElementById('filterType').value;
         const paymentMethodFilter = document.getElementById('filterPaymentMethod').value;
@@ -273,7 +358,7 @@
             return orderBy === 'newest' ? dateB - dateA : dateA - dateB;
         });
         
-        displayTransactions(filteredTransactions);
+        renderTransactions(filteredTransactions);
     }
 
     function clearFilters() {
@@ -286,65 +371,6 @@
         document.getElementById('filterDateTo').value = '';
         document.getElementById('filterOrder').value = 'newest';
         applyFilters();
-    }
-
-    function displayTransactions(transactions) {
-        const tableBody = document.getElementById('transactionsTableBody');
-        tableBody.innerHTML = '';
-        
-        if (transactions.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No hay transacciones disponibles</td></tr>';
-            return;
-        }
-        
-        let totalIncome = 0;
-        let totalExpenses = 0;
-        
-        transactions.forEach(transaction => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${new Date(transaction.fecha).toLocaleDateString()}</td>
-                <td>${transaction.category ? transaction.category.name : 'Sin categoría'}</td>
-                <td>${transaction.description}</td>
-                <td class="${transaction.type === 'INGRESO' ? 'text-success' : 'text-danger'}">
-                    ${transaction.type === 'INGRESO' ? '+' : '-'}$${transaction.amount}
-                </td>
-                <td>
-                    <span class="badge rounded-pill ${transaction.type === 'INGRESO' ? 'bg-success' : 'bg-danger'} text-white">
-                        ${transaction.type}
-                    </span>
-                </td>
-                <td>
-                    <span class="badge rounded-pill ${transaction.paymentMethod === 'CRYPTO' ? 'bg-warning' : 
-                                                      transaction.paymentMethod === 'EFECTIVO' ? 'bg-success' : 
-                                                      transaction.paymentMethod === 'TRANSFERENCIA' ? 'bg-info' : 
-                                                      'bg-secondary'} text-white">
-                        ${transaction.paymentMethod || 'No especificado'}
-                    </span>
-                </td>
-                <td>
-                    ${transaction.receiptPath ? 
-                        `<a href="/api/receipts/${transaction.receiptPath}" target="_blank" class="btn btn-sm btn-outline-primary">
-                            <i class="fas fa-file-alt"></i> Ver comprobante
-                        </a>` : 
-                        '<span class="text-muted">Sin comprobante</span>'
-                    }
-                </td>
-            `;
-            tableBody.appendChild(row);
-
-            if (transaction.type === 'INGRESO') {
-                totalIncome += parseFloat(transaction.amount);
-            } else {
-                totalExpenses += parseFloat(transaction.amount);
-            }
-        });
-
-        // Actualizar los totales en las cards
-        document.getElementById('totalIncome').textContent = `$${totalIncome.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        document.getElementById('totalExpenses').textContent = `$${totalExpenses.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        document.getElementById('totalBalance').textContent = `$${(totalIncome - totalExpenses).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        document.getElementById('totalSavings').textContent = `$${(totalIncome - totalExpenses).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     }
 
     // Cargar la librería de Google Charts
@@ -490,13 +516,11 @@
             });
     }
 
-    // Cargar transacciones y gráficas cuando la página se carga
-    document.addEventListener('DOMContentLoaded', function() {
-        loadTransactions();
-        google.charts.setOnLoadCallback(function() {
-            drawExpenseDistributionChart();
-            drawMonthlyIncomeExpenseChart();
-        });
+    // Cargar transacciones al iniciar
+    document.addEventListener('DOMContentLoaded', loadTransactions);
+    google.charts.setOnLoadCallback(function() {
+        drawExpenseDistributionChart();
+        drawMonthlyIncomeExpenseChart();
     });
 </script>
 

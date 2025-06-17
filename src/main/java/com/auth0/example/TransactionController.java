@@ -53,6 +53,12 @@ public class TransactionController {
             logger.info("Email del usuario: {}", userEmail);
             List<Transaction> transactions = transactionRepository.findAll().stream()
                 .filter(t -> userEmail.equals(t.getUserMail()))
+                .peek(t -> {
+                    if (t.getCategory() != null && t.getCategory().getParentCategory() != null) {
+                        Category parentCategory = t.getCategory().getParentCategory();
+                        t.getCategory().setParentCategory(parentCategory);
+                    }
+                })
                 .toList();
                 
             logger.info("Transacciones encontradas: {}", transactions.size());
