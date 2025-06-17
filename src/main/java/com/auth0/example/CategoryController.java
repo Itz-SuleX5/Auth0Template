@@ -39,17 +39,6 @@ public class CategoryController {
             logger.info("GET /api/categories - Obteniendo todas las categorías");
             List<Category> categories = categoryRepository.findAll();
             logger.info("Categorías encontradas: {}", categories.size());
-            
-            // Log de cada categoría para debug
-            for (Category category : categories) {
-                try {
-                    String categoryJson = objectMapper.writeValueAsString(category);
-                    logger.debug("Categoría: {}", categoryJson);
-                } catch (Exception e) {
-                    logger.error("Error al serializar categoría: {}", category, e);
-                }
-            }
-            
             return ResponseEntity.ok(categories);
         } catch (Exception e) {
             logger.error("Error al obtener las categorías", e);
@@ -75,6 +64,13 @@ public class CategoryController {
             if (category.getIcon() == null || category.getIcon().trim().isEmpty()) {
                 logger.error("Error: El icono es requerido");
                 return ResponseEntity.badRequest().body("El icono es requerido");
+            }
+
+            // Manejar la categoría padre
+            if (category.getParentCategoryId() != null) {
+                Category parentCategory = categoryRepository.findById(category.getParentCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Categoría padre no encontrada"));
+                category.setParentCategory(parentCategory);
             }
 
             Category savedCategory = categoryRepository.save(category);
@@ -117,6 +113,16 @@ public class CategoryController {
                         existingCategory.setName(categoryDetails.getName());
                         existingCategory.setDescription(categoryDetails.getDescription());
                         existingCategory.setIcon(categoryDetails.getIcon());
+                        
+                        // Manejar la categoría padre
+                        if (categoryDetails.getParentCategoryId() != null) {
+                            Category parentCategory = categoryRepository.findById(categoryDetails.getParentCategoryId())
+                                .orElseThrow(() -> new RuntimeException("Categoría padre no encontrada"));
+                            existingCategory.setParentCategory(parentCategory);
+                        } else {
+                            existingCategory.setParentCategoryId(null);
+                        }
+                        
                         Category updatedCategory = categoryRepository.save(existingCategory);
                         logger.info("Categoría actualizada exitosamente: {}", updatedCategory);
                         return ResponseEntity.ok(updatedCategory);

@@ -24,6 +24,14 @@ public class Category {
     @Column(nullable = false)
     private String icon;
 
+    @Column(name = "parent_category_id")
+    private Long parentCategoryId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_category_id", insertable = false, updatable = false)
+    @JsonIgnoreProperties({"parentCategory", "transactions"})
+    private Category parentCategory;
+
     @OneToMany(mappedBy = "category")
     @JsonIgnore
     private List<Transaction> transactions;
@@ -65,6 +73,23 @@ public class Category {
         this.icon = icon;
     }
 
+    public Long getParentCategoryId() {
+        return parentCategoryId;
+    }
+
+    public void setParentCategoryId(Long parentCategoryId) {
+        this.parentCategoryId = parentCategoryId;
+    }
+
+    public Category getParentCategory() {
+        return parentCategory;
+    }
+
+    public void setParentCategory(Category parentCategory) {
+        this.parentCategory = parentCategory;
+        this.parentCategoryId = parentCategory != null ? parentCategory.getId() : null;
+    }
+
     @JsonIgnore
     public List<Transaction> getTransactions() {
         return transactions;
@@ -80,7 +105,6 @@ public class Category {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", description='" + description + '\'' +
-                ", icon='" + icon + '\'' +
                 '}';
     }
 } 
