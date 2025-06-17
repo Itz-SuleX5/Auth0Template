@@ -45,3 +45,6 @@ replay_pid*
 Thumbs.db
 ehthumbs.db
 Desktop.ini 
+
+# Receipts
+/uploads
