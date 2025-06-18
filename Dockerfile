@@ -2,6 +2,7 @@
 FROM eclipse-temurin:17-jdk-alpine AS build
 WORKDIR /app
 COPY . .
+RUN chmod +x gradlew
 RUN ./gradlew clean bootJar --no-daemon
 
 # Etapa de producción
