@@ -93,6 +93,44 @@ public class TransactionViewController {
                 return "redirect:/new-transaction";
             }
 
+            // Validar si es un gasto con método de pago AHORROS
+            if (transaction.getType() == Transaction.TransactionType.GASTO && 
+                transaction.getPaymentMethod() == Transaction.PaymentMethod.AHORROS) {
+                
+                // Obtener todas las transacciones del usuario
+                List<Transaction> userTransactions = transactionRepository.findByUserMail(userEmail);
+                
+                // Calcular el total de ahorros disponible
+                BigDecimal totalAhorros = BigDecimal.ZERO;
+                for (Transaction t : userTransactions) {
+                    // Sumar si es un ingreso en la categoría Ahorros
+                    if (t.getCategory() != null && 
+                        t.getCategory().getName().equals("Ahorros") && 
+                        t.getType() == Transaction.TransactionType.INGRESO) {
+                        totalAhorros = totalAhorros.add(t.getAmount());
+                    }
+                    // Sumar si es un ingreso con método de pago AHORROS
+                    else if (t.getPaymentMethod() == Transaction.PaymentMethod.AHORROS && 
+                            t.getType() == Transaction.TransactionType.INGRESO) {
+                        totalAhorros = totalAhorros.add(t.getAmount());
+                    }
+                    // Restar si es un gasto con método de pago AHORROS
+                    else if (t.getPaymentMethod() == Transaction.PaymentMethod.AHORROS && 
+                            t.getType() == Transaction.TransactionType.GASTO) {
+                        totalAhorros = totalAhorros.subtract(t.getAmount());
+                    }
+                }
+
+                // Validar que el monto del gasto no exceda los ahorros disponibles
+                if (transaction.getAmount().compareTo(totalAhorros) > 0) {
+                    logger.warn("Intento de gastar más de lo disponible en ahorros. Disponible: {}, Intento de gasto: {}", 
+                              totalAhorros, transaction.getAmount());
+                    redirectAttributes.addFlashAttribute("error", 
+                        "No puedes gastar más de lo que tienes en ahorros. Ahorros disponibles: " + totalAhorros);
+                    return "redirect:/new-transaction";
+                }
+            }
+
             // Manejar la subida del archivo si existe
             if (receipt != null && !receipt.isEmpty()) {
                 logger.info("Procesando archivo adjunto: {} ({} bytes)", 

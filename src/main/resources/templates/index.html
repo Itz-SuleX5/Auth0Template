@@ -101,6 +101,7 @@
                                     <option value="EFECTIVO">Efectivo</option>
                                     <option value="TRANSFERENCIA">Transferencia</option>
                                     <option value="CRYPTO">Crypto</option>
+                                    <option value="AHORROS">Ahorros</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
@@ -238,7 +239,8 @@
                 <td>
                     <span class="badge rounded-pill ${transaction.paymentMethod === 'CRYPTO' ? 'bg-warning' : 
                                                       transaction.paymentMethod === 'EFECTIVO' ? 'bg-success' : 
-                                                      transaction.paymentMethod === 'TRANSFERENCIA' ? 'bg-info' : 
+                                                      transaction.paymentMethod === 'TRANSFERENCIA' ? 'bg-primary' : 
+                                                      transaction.paymentMethod === 'AHORROS' ? 'bg-info' :
                                                       'bg-secondary'} text-white">
                         ${transaction.paymentMethod || 'No especificado'}
                     </span>

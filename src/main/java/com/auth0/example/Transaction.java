@@ -47,7 +47,8 @@ public class Transaction {
     public enum PaymentMethod {
         EFECTIVO,
         TRANSFERENCIA,
-        CRYPTO
+        CRYPTO,
+        AHORROS
     }
 
     // Constructor vacío requerido por JPA

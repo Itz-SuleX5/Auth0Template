@@ -34,6 +34,9 @@
                             <div class="mb-3">
                                 <label for="transactionAmount" class="form-label">Monto</label>
                                 <input type="number" class="form-control" id="transactionAmount" name="amount" step="0.01" min="0.01" required>
+                                <div id="savingsError" class="invalid-feedback" style="display: none; color: red;">
+                                    El monto excede tus ahorros disponibles
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label for="transactionCategory" class="form-label">Categoría</label>
@@ -60,6 +63,7 @@
                                     <option value="EFECTIVO">Efectivo</option>
                                     <option value="TRANSFERENCIA">Transferencia Electrónica</option>
                                     <option value="CRYPTO">Crypto</option>
+                                    <option value="AHORROS">Ahorros</option>
                                 </select>
                             </div>
                             <div class="mb-3">
@@ -104,10 +108,56 @@
         }
     }
 
+    // Función para validar el monto contra los ahorros disponibles
+    async function validateSavingsAmount() {
+        const paymentMethod = document.getElementById('paymentMethod').value;
+        const amount = parseFloat(document.getElementById('transactionAmount').value) || 0;
+        const type = document.getElementById('transactionType').value;
+        const savingsError = document.getElementById('savingsError');
+        const submitButton = document.querySelector('button[type="submit"]');
+
+        // Si es un gasto con método de pago AHORROS
+        if (paymentMethod === 'AHORROS' && type === 'GASTO') {
+            try {
+                const response = await fetch('/api/transactions/savings');
+                if (!response.ok) {
+                    throw new Error('Error al obtener el total de ahorros');
+                }
+                const availableSavings = await response.json();
+                console.log('Ahorros disponibles:', availableSavings, 'Monto a gastar:', amount);
+                
+                if (amount > availableSavings) {
+                    savingsError.style.display = 'block';
+                    submitButton.disabled = true;
+                    return false;
+                } else {
+                    savingsError.style.display = 'none';
+                    submitButton.disabled = false;
+                    return true;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al validar los ahorros disponibles');
+                return false;
+            }
+        } else {
+            savingsError.style.display = 'none';
+            submitButton.disabled = false;
+            return true;
+        }
+    }
+
     // Función para enviar el formulario
     document.getElementById('newTransactionForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
+        // Validar ahorros antes de enviar
+        const isValid = await validateSavingsAmount();
+        if (!isValid) {
+            alert('No puedes gastar más de lo que tienes en ahorros');
+            return;
+        }
+
         const formData = new FormData();
         
         // Crear objeto de transacción
@@ -155,8 +205,22 @@
         }
     });
 
-    // Cargar categorías cuando el documento esté listo
-    document.addEventListener('DOMContentLoaded', loadCategories);
+    // Agregar event listeners para la validación
+    document.addEventListener('DOMContentLoaded', function() {
+        loadCategories();
+        
+        const amountInput = document.getElementById('transactionAmount');
+        const paymentMethodSelect = document.getElementById('paymentMethod');
+        const typeSelect = document.getElementById('transactionType');
+
+        // Validar cuando cambia cualquier campo relevante
+        amountInput.addEventListener('input', validateSavingsAmount);
+        paymentMethodSelect.addEventListener('change', validateSavingsAmount);
+        typeSelect.addEventListener('change', validateSavingsAmount);
+
+        // Validar también cuando se carga la página
+        validateSavingsAmount();
+    });
 </script>
 
 </html> 

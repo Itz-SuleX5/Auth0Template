@@ -9,12 +9,14 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Optional;
 import java.math.BigDecimal;
 import java.io.IOException;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -71,8 +73,9 @@ public class TransactionController {
     }
 
     @GetMapping("/savings")
-    public ResponseEntity<?> getSavings(@AuthenticationPrincipal OidcUser principal) {
+    public ResponseEntity<?> getTotalSavings(@AuthenticationPrincipal OidcUser principal) {
         try {
+            logger.info("GET /api/transactions/savings - Calculando total de ahorros");
             String userEmail = principal.getEmail();
             
             // Buscar la categoría Ahorros
@@ -81,17 +84,27 @@ public class TransactionController {
                 logger.info("No existe la categoría Ahorros");
                 return ResponseEntity.ok(BigDecimal.ZERO);
             }
-
-            // Obtener SOLO las transacciones de ahorros
-            List<Transaction> ahorrosTransactions = transactionRepository.findByCategoryIdAndUserMail(ahorrosCategory.getId(), userEmail);
-            logger.info("Transacciones de ahorros encontradas: {}", ahorrosTransactions.size());
-
-            // Calcular el total SOLO de ahorros
+            
+            // Obtener todas las transacciones del usuario
+            List<Transaction> userTransactions = transactionRepository.findByUserMail(userEmail);
+            
+            // Calcular el total de ahorros disponible
             BigDecimal totalAhorros = BigDecimal.ZERO;
-            for (Transaction transaction : ahorrosTransactions) {
-                if (transaction.getType() == Transaction.TransactionType.INGRESO) {
+            for (Transaction transaction : userTransactions) {
+                // Sumar si es un ingreso en la categoría Ahorros
+                if (transaction.getCategory() != null && 
+                    transaction.getCategory().getName().equals("Ahorros") && 
+                    transaction.getType() == Transaction.TransactionType.INGRESO) {
                     totalAhorros = totalAhorros.add(transaction.getAmount());
-                } else {
+                }
+                // Sumar si es un ingreso con método de pago AHORROS
+                else if (transaction.getPaymentMethod() == Transaction.PaymentMethod.AHORROS && 
+                        transaction.getType() == Transaction.TransactionType.INGRESO) {
+                    totalAhorros = totalAhorros.add(transaction.getAmount());
+                }
+                // Restar si es un gasto con método de pago AHORROS
+                else if (transaction.getPaymentMethod() == Transaction.PaymentMethod.AHORROS && 
+                        transaction.getType() == Transaction.TransactionType.GASTO) {
                     totalAhorros = totalAhorros.subtract(transaction.getAmount());
                 }
             }
@@ -105,20 +118,56 @@ public class TransactionController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createTransaction(@RequestBody Transaction transaction, @AuthenticationPrincipal OidcUser principal) {
+    public ResponseEntity<?> createTransaction(@RequestParam("transaction") String transactionJson,
+                                             @RequestParam(value = "receipt", required = false) MultipartFile receipt,
+                                             @AuthenticationPrincipal OidcUser principal) {
         try {
             logger.info("POST /api/transactions - Creando nueva transacción");
-            
-            // Si no se especificó categoría o es null, usar "No especificado"
-            if (transaction.getCategory() == null || transaction.getCategory().getId() == null) {
-                Category noEspecificado = categoryRepository.findByName("No especificado");
-                if (noEspecificado == null) {
-                    noEspecificado = new Category();
-                    noEspecificado.setName("No especificado");
-                    noEspecificado.setIcon("fas fa-question-circle");
-                    noEspecificado = categoryRepository.save(noEspecificado);
+            ObjectMapper mapper = new ObjectMapper();
+            Transaction transaction = mapper.readValue(transactionJson, Transaction.class);
+
+            // Validar si es un gasto con método de pago AHORROS
+            if (transaction.getType() == Transaction.TransactionType.GASTO && 
+                transaction.getPaymentMethod() == Transaction.PaymentMethod.AHORROS) {
+                
+                // Obtener todas las transacciones del usuario
+                List<Transaction> userTransactions = transactionRepository.findByUserMail(principal.getEmail());
+                
+                // Calcular el total de ahorros disponible
+                BigDecimal totalAhorros = BigDecimal.ZERO;
+                for (Transaction t : userTransactions) {
+                    // Sumar si es un ingreso en la categoría Ahorros
+                    if (t.getCategory() != null && 
+                        t.getCategory().getName().equals("Ahorros") && 
+                        t.getType() == Transaction.TransactionType.INGRESO) {
+                        totalAhorros = totalAhorros.add(t.getAmount());
+                    }
+                    // Sumar si es un ingreso con método de pago AHORROS
+                    else if (t.getPaymentMethod() == Transaction.PaymentMethod.AHORROS && 
+                            t.getType() == Transaction.TransactionType.INGRESO) {
+                        totalAhorros = totalAhorros.add(t.getAmount());
+                    }
+                    // Restar si es un gasto con método de pago AHORROS
+                    else if (t.getPaymentMethod() == Transaction.PaymentMethod.AHORROS && 
+                            t.getType() == Transaction.TransactionType.GASTO) {
+                        totalAhorros = totalAhorros.subtract(t.getAmount());
+                    }
                 }
-                transaction.setCategory(noEspecificado);
+
+                // Validar que el monto del gasto no exceda los ahorros disponibles
+                if (transaction.getAmount().compareTo(totalAhorros) > 0) {
+                    logger.warn("Intento de gastar más de lo disponible en ahorros. Disponible: {}, Intento de gasto: {}", 
+                              totalAhorros, transaction.getAmount());
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("No puedes gastar más de lo que tienes en ahorros. Ahorros disponibles: " + totalAhorros);
+                }
+            }
+
+            // Procesar el comprobante si existe
+            if (receipt != null && !receipt.isEmpty()) {
+                String fileName = receipt.getOriginalFilename();
+                String receiptPath = fileStorageService.storeFile(receipt, fileName);
+                transaction.setReceiptPath(receiptPath);
             }
 
             transaction.setUserMail(principal.getEmail());
