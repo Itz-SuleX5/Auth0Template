@@ -112,7 +112,9 @@
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                categories = await response.json();
+                let data = await response.json();
+                // Si la respuesta tiene la clave 'categories', usarla
+                categories = Array.isArray(data) ? data : (data.categories || []);
                 renderCategories();
                 updateParentCategorySelect();
             } catch (error) {
@@ -300,4 +302,4 @@
         }
     </script>
 </body>
-</html> 
+</html>

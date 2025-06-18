@@ -27,6 +27,9 @@ public class Category {
     @Column(name = "parent_category_id")
     private Long parentCategoryId;
 
+    @Column(name = "user_mail")
+    private String userMail;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_category_id", insertable = false, updatable = false)
     @JsonIgnoreProperties({"parentCategory", "transactions"})
@@ -81,6 +84,14 @@ public class Category {
         this.parentCategoryId = parentCategoryId;
     }
 
+    public String getUserMail() {
+        return userMail;
+    }
+
+    public void setUserMail(String userMail) {
+        this.userMail = userMail;
+    }
+
     public Category getParentCategory() {
         return parentCategory;
     }
@@ -107,4 +118,4 @@ public class Category {
                 ", description='" + description + '\'' +
                 '}';
     }
-} 
+}

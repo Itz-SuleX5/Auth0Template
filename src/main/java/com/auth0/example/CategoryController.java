@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -38,13 +40,22 @@ public class CategoryController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getAllCategories() {
+    public ResponseEntity<?> getAllCategories(@AuthenticationPrincipal OidcUser principal) {
         try {
-            logger.info("GET /api/categories - Obteniendo todas las categorías");
-            List<Category> categories = categoryRepository.findAll().stream()
-                .filter(category -> !"No especificado".equals(category.getName()))
-                .collect(Collectors.toList());
-            logger.info("Categorías encontradas: {}", categories.size());
+            logger.info("GET /api/categories - Obteniendo todas las categorías para el usuario");
+            String userEmail = principal != null ? principal.getEmail() : null;
+            List<Category> categories;
+            if (userEmail != null) {
+                // Mostrar categorías globales (userMail null) y del usuario
+                categories = categoryRepository.findAll().stream()
+                    .filter(category -> category.getUserMail() == null || userEmail.equals(category.getUserMail()))
+                    .filter(category -> !"No especificado".equals(category.getName()))
+                    .collect(Collectors.toList());
+            } else {
+                categories = categoryRepository.findAll().stream()
+                    .filter(category -> !"No especificado".equals(category.getName()))
+                    .collect(Collectors.toList());
+            }
             return ResponseEntity.ok(categories);
         } catch (Exception e) {
             logger.error("Error al obtener las categorías", e);
@@ -53,32 +64,33 @@ public class CategoryController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createCategory(@RequestBody Category category) {
+    public ResponseEntity<?> createCategory(@RequestBody Category category, @AuthenticationPrincipal OidcUser principal) {
         try {
             logger.info("POST /api/categories - Recibida petición para crear categoría: {}", category);
-            
             if (category == null) {
                 logger.error("Error: La categoría no puede ser nula");
                 return ResponseEntity.badRequest().body("La categoría no puede ser nula");
             }
-
             if (category.getName() == null || category.getName().trim().isEmpty()) {
                 logger.error("Error: El nombre es requerido");
                 return ResponseEntity.badRequest().body("El nombre es requerido");
             }
-
             if (category.getIcon() == null || category.getIcon().trim().isEmpty()) {
                 logger.error("Error: El icono es requerido");
                 return ResponseEntity.badRequest().body("El icono es requerido");
             }
-
+            // Asignar SIEMPRE el correo del usuario autenticado
+            if (principal != null) {
+                category.setUserMail(principal.getEmail());
+            } else {
+                category.setUserMail(null);
+            }
             // Manejar la categoría padre
             if (category.getParentCategoryId() != null) {
                 Category parentCategory = categoryRepository.findById(category.getParentCategoryId())
                     .orElseThrow(() -> new RuntimeException("Categoría padre no encontrada"));
                 category.setParentCategory(parentCategory);
             }
-
             Category savedCategory = categoryRepository.save(category);
             logger.info("Categoría creada exitosamente: {}", savedCategory);
             return ResponseEntity.ok(savedCategory);
@@ -174,4 +186,4 @@ public class CategoryController {
             return ResponseEntity.internalServerError().body("Error al eliminar la categoría: " + e.getMessage());
         }
     }
-} 
+}
