@@ -151,7 +151,7 @@
                 const row = document.createElement('tr');
                 const parentCategory = category.parentCategoryId ? 
                     categories.find(cat => cat.id === category.parentCategoryId)?.name : '';
-                
+                const isGlobal = category.userMail === null || category.userMail === undefined;
                 row.innerHTML = `
                     <td>${category.id}</td>
                     <td>${category.name}</td>
@@ -159,12 +159,14 @@
                     <td><i class="${category.icon}"></i></td>
                     <td>${parentCategory || ''}</td>
                     <td>
+                        ${!isGlobal ? `
                         <button class="btn btn-sm btn-warning" onclick='editCategory(${JSON.stringify(category)})'>
                             <i class="fas fa-edit"></i>
                         </button>
                         <button class="btn btn-sm btn-danger" onclick="deleteCategory(${category.id})">
                             <i class="fas fa-trash"></i>
                         </button>
+                        ` : ''}
                     </td>
                 `;
                 tableBody.appendChild(row);
@@ -187,7 +189,7 @@
         function createCategoryTreeElement(category) {
             const div = document.createElement('div');
             div.className = 'list-group-item';
-            
+            const isGlobal = category.userMail === null || category.userMail === undefined;
             // Encontrar subcategorías
             const subcategories = categories.filter(cat => 
                 cat.parentCategoryId && cat.parentCategoryId === category.id
@@ -201,12 +203,14 @@
                         ${category.description ? `<small class="text-muted ms-2">${category.description}</small>` : ''}
                     </div>
                     <div>
+                        ${!isGlobal ? `
                         <button class="btn btn-sm btn-warning" onclick='editCategory(${JSON.stringify(category)})'>
                             <i class="fas fa-edit"></i>
                         </button>
                         <button class="btn btn-sm btn-danger" onclick="deleteCategory(${category.id})">
                             <i class="fas fa-trash"></i>
                         </button>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -214,12 +218,10 @@
             if (subcategories.length > 0) {
                 const subcategoriesDiv = document.createElement('div');
                 subcategoriesDiv.className = 'list-group ms-4 mt-2';
-                
                 subcategories.forEach(subcategory => {
                     const subcategoryElement = createCategoryTreeElement(subcategory);
                     subcategoriesDiv.appendChild(subcategoryElement);
                 });
-                
                 div.appendChild(subcategoriesDiv);
             }
 

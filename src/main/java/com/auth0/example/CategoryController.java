@@ -128,10 +128,14 @@ public class CategoryController {
             logger.info("PUT /api/categories/{} - Actualizando categoría", id);
             return categoryRepository.findById(id)
                     .map(existingCategory -> {
+                        // No permitir modificar categorías globales (userMail == null)
+                        if (existingCategory.getUserMail() == null) {
+                            logger.warn("Intento de modificar una categoría global/inmutable");
+                            return ResponseEntity.status(403).body("No se puede modificar una categoría global");
+                        }
                         existingCategory.setName(categoryDetails.getName());
                         existingCategory.setDescription(categoryDetails.getDescription());
                         existingCategory.setIcon(categoryDetails.getIcon());
-                        
                         // Manejar la categoría padre
                         if (categoryDetails.getParentCategoryId() != null) {
                             Category parentCategory = categoryRepository.findById(categoryDetails.getParentCategoryId())
@@ -140,7 +144,6 @@ public class CategoryController {
                         } else {
                             existingCategory.setParentCategoryId(null);
                         }
-                        
                         Category updatedCategory = categoryRepository.save(existingCategory);
                         logger.info("Categoría actualizada exitosamente: {}", updatedCategory);
                         return ResponseEntity.ok(updatedCategory);
@@ -158,6 +161,11 @@ public class CategoryController {
             logger.info("DELETE /api/categories/{} - Eliminando categoría", id);
             return categoryRepository.findById(id)
                     .map(category -> {
+                        // No permitir eliminar categorías globales (userMail == null)
+                        if (category.getUserMail() == null) {
+                            logger.warn("Intento de eliminar una categoría global/inmutable");
+                            return ResponseEntity.status(403).body("No se puede eliminar una categoría global");
+                        }
                         // Buscar la categoría "No especificado"
                         Category noEspecificado = categoryRepository.findByName("No especificado");
                         if (noEspecificado == null) {
@@ -167,14 +175,12 @@ public class CategoryController {
                             noEspecificado.setIcon("fas fa-question-circle");
                             noEspecificado = categoryRepository.save(noEspecificado);
                         }
-
                         // Actualizar todas las transacciones que usan esta categoría
                         List<Transaction> transactions = transactionRepository.findByCategoryId(id);
                         for (Transaction transaction : transactions) {
                             transaction.setCategory(noEspecificado);
                         }
                         transactionRepository.saveAll(transactions);
-
                         // Ahora podemos eliminar la categoría
                         categoryRepository.delete(category);
                         logger.info("Categoría eliminada exitosamente");
