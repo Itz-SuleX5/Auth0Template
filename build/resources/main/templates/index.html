@@ -98,6 +98,7 @@
                                 <label for="filterPaymentMethod" class="form-label">Método de Pago</label>
                                 <select class="form-select" id="filterPaymentMethod">
                                     <option value="">Todos los métodos</option>
+                                    <option value="NO_ESPECIFICADO">No especificado</option>
                                     <option value="EFECTIVO">Efectivo</option>
                                     <option value="TRANSFERENCIA">Transferencia</option>
                                     <option value="CRYPTO">Crypto</option>
@@ -198,8 +199,8 @@
                 return response.json();
             })
             .then(transactions => {
-                renderTransactions(transactions);
-                updateTotals(transactions);
+                allTransactions = transactions; // Guardar todas las transacciones
+                applyFilters(); // Aplicar filtros iniciales
                 updateCategoryFilter(transactions);
                 loadSavingsTotal();
             })
@@ -296,19 +297,30 @@
     function updateCategoryFilter(transactions) {
         const filterSelect = document.getElementById('filterCategory');
         const categories = new Set();
+        let hasUnspecified = false;
         
         transactions.forEach(transaction => {
             if (transaction.category) {
                 if (transaction.category.parentCategory) {
-                    categories.add(`${transaction.category.parentCategory.name}(${transaction.category.name})`);
+                    categories.add(transaction.category.parentCategory.name);
                 } else {
                     categories.add(transaction.category.name);
                 }
+            } else {
+                hasUnspecified = true;
             }
         });
 
         // Mantener la opción "Todas las categorías"
         filterSelect.innerHTML = '<option value="">Todas las categorías</option>';
+        
+        // Agregar la opción "No especificado" si existe al menos una transacción sin categoría
+        if (hasUnspecified) {
+            const option = document.createElement('option');
+            option.value = "NO_ESPECIFICADO";
+            option.textContent = "No especificado";
+            filterSelect.appendChild(option);
+        }
         
         // Agregar las categorías únicas
         Array.from(categories).sort().forEach(category => {
@@ -320,7 +332,6 @@
     }
 
     function applyFilters() {
-        const tableBody = document.getElementById('recentTransactionsTable');
         const categoryFilter = document.getElementById('filterCategory').value;
         const typeFilter = document.getElementById('filterType').value;
         const paymentMethodFilter = document.getElementById('filterPaymentMethod').value;
@@ -331,11 +342,27 @@
         const orderBy = document.getElementById('filterOrder').value;
         
         let filteredTransactions = allTransactions.filter(transaction => {
+            // Filtro de categoría
             const categoryMatch = !categoryFilter || 
-                                (transaction.category && transaction.category.name === categoryFilter);
+                (categoryFilter === "NO_ESPECIFICADO" && !transaction.category) ||
+                (transaction.category && 
+                ((transaction.category.parentCategory && transaction.category.parentCategory.name === categoryFilter) ||
+                 transaction.category.name === categoryFilter));
+
+            // Filtro de tipo
             const typeMatch = !typeFilter || transaction.type === typeFilter;
-            const paymentMethodMatch = !paymentMethodFilter || transaction.paymentMethod === paymentMethodFilter;
-            const receiptMatch = !receiptFilter || (receiptFilter === 'with' && transaction.receiptPath) || (receiptFilter === 'without' && !transaction.receiptPath);
+
+            // Filtro de método de pago
+            const paymentMethodMatch = !paymentMethodFilter || 
+                (paymentMethodFilter === "NO_ESPECIFICADO" && !transaction.paymentMethod) ||
+                transaction.paymentMethod === paymentMethodFilter;
+
+            // Filtro de comprobante
+            const receiptMatch = !receiptFilter || 
+                (receiptFilter === 'with' && transaction.receiptPath) || 
+                (receiptFilter === 'without' && !transaction.receiptPath);
+
+            // Filtro de monto
             const amountMatch = !amountFilter || Math.abs(parseFloat(transaction.amount)) >= amountFilter;
             
             // Filtro de rango de fechas
