@@ -1,9 +1,17 @@
-FROM gradle:8.3-jdk17
+# Etapa de build
+FROM eclipse-temurin:17-jdk-alpine AS build
+WORKDIR /app
+COPY . .
+RUN ./gradlew clean bootJar --no-daemon
 
-WORKDIR /tmp
-ADD . /tmp
+# Etapa de producción
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+COPY --from=build /app/build/libs/*.jar app.jar
 
-RUN gradle build
+# Si tienes recursos estáticos JS (npm, node_modules, build), puedes copiarlos aquí si es necesario
+# COPY --from=build /app/src/main/resources/static /app/static
 
-CMD ["gradle", "clean", "bootRun"]
-EXPOSE 3000
+ENV SPRING_PROFILES_ACTIVE=prod
+EXPOSE 8080
+ENTRYPOINT ["java","-jar","/app/app.jar"]
