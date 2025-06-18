@@ -198,7 +198,9 @@
             })
             .then(transactions => {
                 renderTransactions(transactions);
+                updateTotals(transactions);
                 updateCategoryFilter(transactions);
+                loadSavingsTotal();
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -287,7 +289,6 @@
         document.getElementById('totalIncome').textContent = `$${formatAmount(totalIncome)}`;
         document.getElementById('totalExpenses').textContent = `$${formatAmount(totalExpenses)}`;
         document.getElementById('totalBalance').textContent = `$${formatAmount(totalIncome - totalExpenses)}`;
-        document.getElementById('totalSavings').textContent = `$${formatAmount(totalIncome - totalExpenses)}`;
     }
 
     function updateCategoryFilter(transactions) {
@@ -516,11 +517,32 @@
             });
     }
 
-    // Cargar transacciones al iniciar
-    document.addEventListener('DOMContentLoaded', loadTransactions);
-    google.charts.setOnLoadCallback(function() {
+    // Función para cargar el total de ahorros
+    function loadSavingsTotal() {
+        fetch('/api/transactions/savings')
+            .then(response => response.json())
+            .then(data => {
+                const totalSavingsElement = document.getElementById('totalSavings');
+                if (totalSavingsElement) {
+                    totalSavingsElement.textContent = new Intl.NumberFormat('es-ES', {
+                        style: 'currency',
+                        currency: 'EUR'
+                    }).format(data);
+                } else {
+                    console.error('No se encontró el elemento totalSavings');
+                }
+            })
+            .catch(error => {
+                console.error('Error al cargar el total de ahorros:', error);
+            });
+    }
+
+    // Cargar todo al iniciar
+    document.addEventListener('DOMContentLoaded', function() {
+        loadTransactions();
         drawExpenseDistributionChart();
         drawMonthlyIncomeExpenseChart();
+        loadSavingsTotal(); // Cargar el total de ahorros
     });
 </script>
 

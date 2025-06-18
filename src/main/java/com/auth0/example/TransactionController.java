@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.math.BigDecimal;
 import java.io.IOException;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -36,43 +37,71 @@ public class TransactionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Transaction>> getAllTransactions(@AuthenticationPrincipal OidcUser principal) {
+    public ResponseEntity<?> getAllTransactions(@AuthenticationPrincipal OidcUser principal) {
         try {
-            if (principal == null) {
-                logger.warn("Intento de acceso sin autenticación");
-                return ResponseEntity.ok(List.of());
-            }
-
-            logger.info("GET /api/transactions - Obteniendo transacciones del usuario");
             String userEmail = principal.getEmail();
-            if (userEmail == null) {
-                logger.error("Email del usuario no encontrado en los claims");
-                return ResponseEntity.ok(List.of());
-            }
-            
-            logger.info("Email del usuario: {}", userEmail);
-            List<Transaction> transactions = transactionRepository.findAll().stream()
-                .filter(t -> userEmail.equals(t.getUserMail()))
-                .peek(t -> {
-                    if (t.getCategory() != null && t.getCategory().getParentCategory() != null) {
-                        Category parentCategory = t.getCategory().getParentCategory();
-                        t.getCategory().setParentCategory(parentCategory);
-                    }
-                })
-                .toList();
-                
-            logger.info("Transacciones encontradas: {}", transactions.size());
+            List<Transaction> transactions = transactionRepository.findByUserMail(userEmail);
             return ResponseEntity.ok(transactions);
         } catch (Exception e) {
-            logger.error("Error al obtener transacciones: {}", e.getMessage(), e);
-            return ResponseEntity.ok(List.of());
+            logger.error("Error al obtener las transacciones", e);
+            return ResponseEntity.internalServerError().body("Error al obtener las transacciones: " + e.getMessage());
         }
     }
 
-    @GetMapping("/test")
-    public ResponseEntity<String> test() {
-        logger.info("GET /api/transactions/test - Endpoint de prueba");
-        return ResponseEntity.ok("El controlador de transacciones está funcionando - " + System.currentTimeMillis());
+    @GetMapping("/balance")
+    public ResponseEntity<?> getBalance(@AuthenticationPrincipal OidcUser principal) {
+        try {
+            String userEmail = principal.getEmail();
+            List<Transaction> transactions = transactionRepository.findByUserMail(userEmail);
+            
+            BigDecimal total = BigDecimal.ZERO;
+            for (Transaction transaction : transactions) {
+                if (transaction.getType() == Transaction.TransactionType.INGRESO) {
+                    total = total.add(transaction.getAmount());
+                } else {
+                    total = total.subtract(transaction.getAmount());
+                }
+            }
+            
+            return ResponseEntity.ok(total);
+        } catch (Exception e) {
+            logger.error("Error al calcular el balance", e);
+            return ResponseEntity.internalServerError().body("Error al calcular el balance: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/savings")
+    public ResponseEntity<?> getSavings(@AuthenticationPrincipal OidcUser principal) {
+        try {
+            String userEmail = principal.getEmail();
+            
+            // Buscar la categoría Ahorros
+            Category ahorrosCategory = categoryRepository.findByName("Ahorros");
+            if (ahorrosCategory == null) {
+                logger.info("No existe la categoría Ahorros");
+                return ResponseEntity.ok(BigDecimal.ZERO);
+            }
+
+            // Obtener SOLO las transacciones de ahorros
+            List<Transaction> ahorrosTransactions = transactionRepository.findByCategoryIdAndUserMail(ahorrosCategory.getId(), userEmail);
+            logger.info("Transacciones de ahorros encontradas: {}", ahorrosTransactions.size());
+
+            // Calcular el total SOLO de ahorros
+            BigDecimal totalAhorros = BigDecimal.ZERO;
+            for (Transaction transaction : ahorrosTransactions) {
+                if (transaction.getType() == Transaction.TransactionType.INGRESO) {
+                    totalAhorros = totalAhorros.add(transaction.getAmount());
+                } else {
+                    totalAhorros = totalAhorros.subtract(transaction.getAmount());
+                }
+            }
+
+            logger.info("Total de ahorros calculado: {}", totalAhorros);
+            return ResponseEntity.ok(totalAhorros);
+        } catch (Exception e) {
+            logger.error("Error al calcular el total de ahorros", e);
+            return ResponseEntity.internalServerError().body("Error al calcular el total de ahorros: " + e.getMessage());
+        }
     }
 
     @PostMapping
@@ -100,6 +129,12 @@ public class TransactionController {
             logger.error("Error al crear la transacción", e);
             return ResponseEntity.badRequest().body("Error al crear la transacción: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/test")
+    public ResponseEntity<String> test() {
+        logger.info("GET /api/transactions/test - Endpoint de prueba");
+        return ResponseEntity.ok("El controlador de transacciones está funcionando - " + System.currentTimeMillis());
     }
 
     @GetMapping("/{id}")
