@@ -75,60 +75,30 @@ public class TransactionController {
         return ResponseEntity.ok("El controlador de transacciones está funcionando - " + System.currentTimeMillis());
     }
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> createTransaction(
-            @RequestPart("transaction") Transaction transaction,
-            @RequestPart(value = "receipt", required = false) MultipartFile receipt,
-            @AuthenticationPrincipal OidcUser principal) {
+    @PostMapping
+    public ResponseEntity<?> createTransaction(@RequestBody Transaction transaction, @AuthenticationPrincipal OidcUser principal) {
         try {
-            logger.info("Recibida solicitud para crear transacción: {}", transaction);
+            logger.info("POST /api/transactions - Creando nueva transacción");
             
-            // Obtener el correo del usuario actual
-            String userEmail = (String) principal.getClaims().get("email");
-            transaction.setUserMail(userEmail);
-            logger.info("Correo del usuario asignado: {}", userEmail);
-            
-            if (transaction.getAmount() == null || transaction.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-                logger.error("Monto inválido: {}", transaction.getAmount());
-                return ResponseEntity.badRequest().body("El monto debe ser mayor que 0");
-            }
-
+            // Si no se especificó categoría o es null, usar "No especificado"
             if (transaction.getCategory() == null || transaction.getCategory().getId() == null) {
-                logger.error("Categoría inválida: {}", transaction.getCategory());
-                return ResponseEntity.badRequest().body("La categoría es requerida");
-            }
-
-            Optional<Category> categoryOpt = categoryRepository.findById(transaction.getCategory().getId());
-            if (categoryOpt.isEmpty()) {
-                logger.error("Categoría no encontrada con ID: {}", transaction.getCategory().getId());
-                return ResponseEntity.badRequest().body("Categoría no encontrada");
-            }
-
-            transaction.setCategory(categoryOpt.get());
-
-            // Manejar la subida del archivo si existe
-            if (receipt != null && !receipt.isEmpty()) {
-                logger.info("Procesando archivo adjunto: {} ({} bytes)", 
-                    receipt.getOriginalFilename(), receipt.getSize());
-                try {
-                    String filePath = fileStorageService.storeFile(receipt, userEmail);
-                    transaction.setReceiptPath(filePath);
-                    logger.info("Archivo guardado exitosamente en: {}", filePath);
-                } catch (IOException e) {
-                    logger.error("Error al guardar el archivo", e);
-                    return ResponseEntity.internalServerError()
-                        .body("Error al guardar el archivo: " + e.getMessage());
+                Category noEspecificado = categoryRepository.findByName("No especificado");
+                if (noEspecificado == null) {
+                    noEspecificado = new Category();
+                    noEspecificado.setName("No especificado");
+                    noEspecificado.setIcon("fas fa-question-circle");
+                    noEspecificado = categoryRepository.save(noEspecificado);
                 }
-            } else {
-                logger.info("No se adjuntó ningún archivo a la transacción");
+                transaction.setCategory(noEspecificado);
             }
 
+            transaction.setUserMail(principal.getEmail());
             Transaction savedTransaction = transactionRepository.save(transaction);
             logger.info("Transacción creada exitosamente: {}", savedTransaction);
             return ResponseEntity.ok(savedTransaction);
         } catch (Exception e) {
-            logger.error("Error al crear transacción", e);
-            return ResponseEntity.internalServerError().body("Error al crear la transacción: " + e.getMessage());
+            logger.error("Error al crear la transacción", e);
+            return ResponseEntity.badRequest().body("Error al crear la transacción: " + e.getMessage());
         }
     }
 

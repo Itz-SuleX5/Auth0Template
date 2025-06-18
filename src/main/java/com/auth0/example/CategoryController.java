@@ -9,6 +9,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
@@ -22,6 +23,9 @@ public class CategoryController {
 
     @Autowired
     private CategoryRepository categoryRepository;
+
+    @Autowired
+    private TransactionRepository transactionRepository;
 
     public CategoryController() {
         logger.info("Inicializando CategoryController");
@@ -37,7 +41,9 @@ public class CategoryController {
     public ResponseEntity<?> getAllCategories() {
         try {
             logger.info("GET /api/categories - Obteniendo todas las categorías");
-            List<Category> categories = categoryRepository.findAll();
+            List<Category> categories = categoryRepository.findAll().stream()
+                .filter(category -> !"No especificado".equals(category.getName()))
+                .collect(Collectors.toList());
             logger.info("Categorías encontradas: {}", categories.size());
             return ResponseEntity.ok(categories);
         } catch (Exception e) {
@@ -140,6 +146,24 @@ public class CategoryController {
             logger.info("DELETE /api/categories/{} - Eliminando categoría", id);
             return categoryRepository.findById(id)
                     .map(category -> {
+                        // Buscar la categoría "No especificado"
+                        Category noEspecificado = categoryRepository.findByName("No especificado");
+                        if (noEspecificado == null) {
+                            // Si no existe, crearla
+                            noEspecificado = new Category();
+                            noEspecificado.setName("No especificado");
+                            noEspecificado.setIcon("fas fa-question-circle");
+                            noEspecificado = categoryRepository.save(noEspecificado);
+                        }
+
+                        // Actualizar todas las transacciones que usan esta categoría
+                        List<Transaction> transactions = transactionRepository.findByCategoryId(id);
+                        for (Transaction transaction : transactions) {
+                            transaction.setCategory(noEspecificado);
+                        }
+                        transactionRepository.saveAll(transactions);
+
+                        // Ahora podemos eliminar la categoría
                         categoryRepository.delete(category);
                         logger.info("Categoría eliminada exitosamente");
                         return ResponseEntity.ok().build();

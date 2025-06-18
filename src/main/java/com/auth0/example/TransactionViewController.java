@@ -15,6 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.io.IOException;
 
 @Controller
@@ -39,7 +40,9 @@ public class TransactionViewController {
             model.addAttribute("transaction", transaction);
             
             logger.info("Obteniendo categorías");
-            List<Category> categories = categoryRepository.findAll();
+            List<Category> categories = categoryRepository.findAll().stream()
+                .filter(category -> !"No especificado".equals(category.getName()))
+                .collect(Collectors.toList());
             logger.info("Categorías encontradas: {}", categories.size());
             model.addAttribute("categories", categories);
             
